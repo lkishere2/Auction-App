@@ -1,3 +1,4 @@
+.env
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
@@ -5,6 +6,7 @@ target/
 !**/src/test/**/target/
 agent.md
 ws.md
+
 
 ### STS ###
 .apt_generated
