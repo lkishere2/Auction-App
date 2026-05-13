@@ -1,0 +1,51 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: Build with Maven
+      run: mvn -B package -DskipTests --file pom.xml
+      env:
+        # Database
+        DB_URL: ${{ secrets.DB_URL }}
+        DB_USERNAME: ${{ secrets.DB_USERNAME }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        
+        # Security
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        JWT_EXPIRY: ${{ secrets.JWT_EXPIRY }}
+        
+        # Redis
+        SPRING_DATA_REDIS_HOST: ${{ secrets.REDIS_HOST }}
+        SPRING_DATA_REDIS_PORT: ${{ secrets.REDIS_PORT }}
+        SPRING_DATA_REDIS_SSL_ENABLED: true
+        SPRING_DATA_REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        
+        # Mail
+        SUPPORT_EMAIL: ${{ secrets.SUPPORT_EMAIL }}
+        APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
