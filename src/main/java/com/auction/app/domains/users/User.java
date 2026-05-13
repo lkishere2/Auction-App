@@ -3,6 +3,7 @@ package com.auction.app.domains.users;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -36,6 +37,9 @@ public class User implements UserDetails {
     private LocalDateTime verificationExpiration;
 
     private boolean enabled;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean passwordResetVerified = false;
 
     public String getDisplayName() {
         return this.username;

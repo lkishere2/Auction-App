@@ -9,4 +9,7 @@ public interface AuthService {
     void verifyUser(VerifyRequest verifyRequest);
     void resendVerificationCode(String email);
     void sendVerificationEmail(User user);
+    void requestPasswordReset(String email);
+    void verifyPasswordReset(VerifyRequest verifyRequest);
+    User resetPassword(String email, String password);
 }

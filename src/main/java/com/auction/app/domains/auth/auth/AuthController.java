@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -48,6 +50,42 @@ public class AuthController {
         try {
             authService.resendVerificationCode(email);
             return ResponseEntity.ok("Verification code resent");
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(path = "/send/password-reset")
+    public ResponseEntity<?> sendPasswordResetRequest(@RequestBody Map<String, String> body) {
+        try {
+            String email = body.get("email");
+            authService.requestPasswordReset(email);
+            return ResponseEntity.ok("Password reset request sent");
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(path = "/verify/password-reset")
+    public ResponseEntity<?> verifyPasswordResetRequest(@RequestBody VerifyRequest verifyRequest) {
+        try {
+            authService.verifyPasswordReset(verifyRequest);
+            return ResponseEntity.ok("Password reset verified successfully");
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(path = "/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
+        try {
+            String email = payload.get("email");
+            String password = payload.get("password");
+            User user = authService.resetPassword(email, password);
+            return ResponseEntity.ok(user);
         }
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

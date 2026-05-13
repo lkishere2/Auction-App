@@ -81,6 +81,45 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
     }
 
+    public void verifyPasswordReset(VerifyRequest verifyRequest) {
+        Optional<User> optionalUser = userRepository.findByEmail(verifyRequest.getEmail());
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("Verification expired");
+            }
+            if (user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
+                user.setVerificationCode(null);
+                user.setVerificationExpiration(null);
+                user.setPasswordResetVerified(true);
+                userRepository.save(user);
+            }
+            else {
+                throw new RuntimeException("Invalid verification code");
+            }
+        }
+        else {
+            throw new RuntimeException("User not found");
+        }
+    }
+
+    public User resetPassword(String email, String password) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.isPasswordResetVerified()) {
+            user.setPassword(passwordEncoder.encode(password));
+            user.setPasswordResetVerified(false);
+        }
+        else {
+            throw new RuntimeException("No password verification has been sent");
+        }
+
+        return userRepository.save(user);
+    }
+
     @Override
     public void verifyUser(VerifyRequest verifyRequest) {
         Optional<User> optionalUser = userRepository.findByEmail(verifyRequest.getEmail());
