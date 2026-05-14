@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @Entity
@@ -74,4 +76,8 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
+
+    @Column(name = "balance",nullable = false)
+    private BigDecimal balance=BigDecimal.ZERO;
+
 }
