@@ -1,10 +1,13 @@
 package com.auction.app.domains.auth.auth;
 
 import com.auction.app.domains.auth.email.EmailService;
-import com.auction.app.domains.auth.email.VerifyRequest;
+import com.auction.app.domains.auth.refreshToken.RefreshToken;
+import com.auction.app.domains.auth.refreshToken.RefreshTokenService;
 import com.auction.app.domains.users.User;
 import com.auction.app.domains.users.UserRepository;
+import com.auction.app.infrastructure.security.JwtService;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -13,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -30,23 +32,29 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private EmailService emailService;
 
-    @Override
-    public User register(RegisterRequest registerRequest) {
-        User newUser = new User();
+    @Autowired
+    private JwtService jwtService;
 
-        newUser.setUsername(registerRequest.getUsername());
-        newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        newUser.setEmail(registerRequest.getEmail());
-        newUser.setVerificationCode(generateVerificationCode());
-        newUser.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
-        newUser.setEnabled(false);
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Override
+    public void register(RegisterRequest request, HttpServletRequest httpRequest) {
+        User newUser = User.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .email(request.getEmail())
+                .verificationCode(generateVerificationCode())
+                .verificationExpiration(LocalDateTime.now().plusMinutes(15))
+                .enabled(false)
+                .build();
         sendVerificationEmail(newUser);
-        return userRepository.save(newUser);
+        userRepository.save(newUser);
     }
 
     @Override
-    public User login(LoginRequest loginRequest) {
-        User user = userRepository.findByEmail(loginRequest.getEmail())
+    public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
         if (!user.isEnabled()) {
@@ -55,18 +63,99 @@ public class AuthServiceImpl implements AuthService {
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getPassword()
+                        request.getEmail(),
+                        request.getPassword()
                 )
         );
 
-        if (!user.getPassword().equals(loginRequest.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
-        }
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = refreshTokenService.generateRefreshToken(user, httpRequest);
 
-        return user;
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .expiresIn(jwtService.getExpirationTime())
+                .build();
     }
 
+    @Override
+    public AuthResponse refresh(String refreshToken, HttpServletRequest request) {
+        RefreshToken currentToken = refreshTokenService.verifyRefreshToken(refreshToken, request);
+
+        User user = userRepository.findById(currentToken.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        refreshTokenService.deleteRefreshToken(refreshToken, String.valueOf(user.getId()));
+
+        String newAccessToken = jwtService.generateToken(user);
+        String newRefreshToken = refreshTokenService.generateRefreshToken(user, request);
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .expiresIn(jwtService.getExpirationTime())
+                .build();
+    }
+
+    @Override
+    public void logout(HttpServletRequest request) {
+        String accessToken = extractBearerToken(request);
+        String refreshToken = request.getHeader("X-Refresh-Token");
+
+        if (refreshToken != null) {
+            RefreshToken current = refreshTokenService.findByToken(refreshToken);
+            if (current != null) {
+                refreshTokenService.deleteRefreshToken(
+                        refreshToken,
+                        String.valueOf(current.getUserId())
+                );
+            }
+        }
+
+        if (accessToken != null) {
+            String jti = jwtService.extractJti(accessToken);
+            long remainingTtl = jwtService.getRemainingTtlMillis(accessToken);
+            refreshTokenService.blacklistAccessToken(jti, remainingTtl);
+        }
+    }
+
+    @Override
+    public void verifyUser(VerifyRequest verifyRequest) {
+        User user = userRepository.findByEmail(verifyRequest.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.isEnabled()) {
+            throw new RuntimeException("Account is already verified");
+        }
+        if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification code expired");
+        }
+        if (!user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
+            throw new RuntimeException("Invalid verification code");
+        }
+
+        user.setEnabled(true);
+        user.setVerificationCode(null);
+        user.setVerificationExpiration(null);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void resendVerificationCode(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.isEnabled()) {
+            throw new RuntimeException("Account is already verified");
+        }
+
+        user.setVerificationCode(generateVerificationCode());
+        user.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
+        sendVerificationEmail(user);
+        userRepository.save(user);
+    }
+
+    @Override
     public void requestPasswordReset(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -81,96 +170,41 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
     }
 
+    @Override
     public void verifyPasswordReset(VerifyRequest verifyRequest) {
-        Optional<User> optionalUser = userRepository.findByEmail(verifyRequest.getEmail());
+        User user = userRepository.findByEmail(verifyRequest.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
+        if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification code expired");
+        }
+        if (!user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
+            throw new RuntimeException("Invalid verification code");
+        }
 
-            if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Verification expired");
-            }
-            if (user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
-                user.setVerificationCode(null);
-                user.setVerificationExpiration(null);
-                user.setPasswordResetVerified(true);
-                userRepository.save(user);
-            }
-            else {
-                throw new RuntimeException("Invalid verification code");
-            }
-        }
-        else {
-            throw new RuntimeException("User not found");
-        }
+        user.setVerificationCode(null);
+        user.setVerificationExpiration(null);
+        user.setPasswordResetVerified(true);
+        userRepository.save(user);
     }
 
-    public User resetPassword(String email, String password) {
+    @Override
+    public void resetPassword(String email, String password) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (user.isPasswordResetVerified()) {
-            user.setPassword(passwordEncoder.encode(password));
-            user.setPasswordResetVerified(false);
-        }
-        else {
-            throw new RuntimeException("No password verification has been sent");
+        if (!user.isPasswordResetVerified()) {
+            throw new RuntimeException("Password reset has not been verified");
         }
 
-        return userRepository.save(user);
-    }
-
-    @Override
-    public void verifyUser(VerifyRequest verifyRequest) {
-        Optional<User> optionalUser = userRepository.findByEmail(verifyRequest.getEmail());
-
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-
-            if (user.isEnabled()) {
-                throw new RuntimeException("Account is already verified");
-            }
-            if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Verification expired");
-            }
-            if (user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
-                user.setEnabled(true);
-                user.setVerificationCode(null);
-                user.setVerificationExpiration(null);
-                userRepository.save(user);
-            }
-            else {
-                throw new RuntimeException("Invalid verification code");
-            }
-        }
-        else {
-            throw new RuntimeException("User not found");
-        }
-    }
-
-    @Override
-    public void resendVerificationCode(String email) {
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            if (user.isEnabled()) {
-                throw new RuntimeException("Account is already verified");
-            }
-            user.setVerificationCode(generateVerificationCode());
-            user.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
-            sendVerificationEmail(user);
-            userRepository.save(user);
-        }
-        else {
-            throw new RuntimeException("User not found");
-        }
+        user.setPassword(passwordEncoder.encode(password));
+        user.setPasswordResetVerified(false);
+        userRepository.save(user);
     }
 
     @Override
     public void sendVerificationEmail(User user) {
         String subject = "Account verification code";
-        String verificationCode = user.getVerificationCode();
         String htmlMessage = "<html>"
                 + "<body style=\"font-family: Arial, sans-serif;\">"
                 + "<div style=\"background-color: #f5f5f5; padding: 20px;\">"
@@ -178,7 +212,7 @@ public class AuthServiceImpl implements AuthService {
                 + "<p style=\"font-size: 16px;\">Please enter the verification code below to continue:</p>"
                 + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">"
                 + "<h3 style=\"color: #333;\">Verification Code:</h3>"
-                + "<p style=\"font-size: 18px; font-weight: bold; color: #007bff;\">" + verificationCode + "</p>"
+                + "<p style=\"font-size: 18px; font-weight: bold; color: #007bff;\">" + user.getVerificationCode() + "</p>"
                 + "</div>"
                 + "</div>"
                 + "</body>"
@@ -191,7 +225,15 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    public String generateVerificationCode() {
+    private String extractBearerToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
+    }
+
+    private String generateVerificationCode() {
         SecureRandom random = new SecureRandom();
         int code = random.nextInt(900000) + 100000;
         return String.valueOf(code);

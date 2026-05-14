@@ -75,4 +75,14 @@ public class JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
+    public String extractJti(String token) {
+        return extractClaim(token, Claims::getId);
+    }
+
+    public long getRemainingTtlMillis(String token) {
+        Date expiration = extractClaim(token, Claims::getExpiration);
+        long remaining = expiration.getTime() - System.currentTimeMillis();
+        return Math.max(remaining, 0); // never return negative
+    }
 }
