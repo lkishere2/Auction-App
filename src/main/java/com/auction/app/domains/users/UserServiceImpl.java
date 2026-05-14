@@ -14,7 +14,7 @@ private UserRepository  userRepository;
 @Override
 public UserResponse getUserInfo(Long id) {
     User user = userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy User với ID: " + id));
+            .orElseThrow(() -> new RuntimeException("Can't find User with ID: " + id));
 
     // Đổ dữ liệu ra Response
     UserResponse response = new UserResponse();
