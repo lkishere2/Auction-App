@@ -34,8 +34,15 @@ public UserResponse updateUser(UserRequest userRequest) {
                 .orElseThrow(() -> new RuntimeException("User does not exist"));
 
         // update information , id,and balance can't be here
+        // check name , if not null , set name , if null ,name unchanged
+        if (userRequest.getUsername() != null && !userRequest.getUsername().isEmpty()) {
         user.setUsername(userRequest.getUsername());
+        }
+
+        //check email if not null , set email , if null , name changed
+        if (userRequest.getEmail() != null && !userRequest.getEmail().isEmpty()) {
         user.setEmail(userRequest.getEmail());
+        }
 
         // save
         userRepository.save(user);
