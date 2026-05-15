@@ -1,14 +1,12 @@
 package com.auction.app.domains.products;
 
 import com.auction.app.domains.tag.Tag;
+import com.auction.app.domains.users.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Setter
@@ -30,7 +28,6 @@ public class Product {
     @Column(name = "productQuantity", nullable = false)
     private int quantity;
 
-
     //add tag to product
     @ElementCollection(targetClass = Tag.class)
     @CollectionTable(name = "product_tags", joinColumns = @JoinColumn(name = "product_id"))
@@ -38,8 +35,7 @@ public class Product {
     @Column(name = "tag_name")
     private Set<Tag> tags = new HashSet<>();
 
-
-
-
-
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User owner;
 }

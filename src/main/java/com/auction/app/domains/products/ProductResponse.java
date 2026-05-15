@@ -11,6 +11,7 @@ import java.util.Set;
 @Setter
 
 public class ProductResponse {
+    private Long id;
     private String productName;
     private Long price;
     private int quantity;
