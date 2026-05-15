@@ -1,15 +1,17 @@
 package com.auction.app.domains.auth.auth;
 
-import com.auction.app.domains.auth.email.VerifyRequest;
 import com.auction.app.domains.users.User;
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface AuthService {
-    User register(RegisterRequest registerRequest);
-    User login(LoginRequest loginRequest);
+    void register(RegisterRequest request, HttpServletRequest httpRequest);
+    AuthResponse login(LoginRequest request, HttpServletRequest httpRequest);
+    AuthResponse refresh(String refreshToken, HttpServletRequest request);
+    void logout(HttpServletRequest request);
     void verifyUser(VerifyRequest verifyRequest);
     void resendVerificationCode(String email);
     void sendVerificationEmail(User user);
     void requestPasswordReset(String email);
     void verifyPasswordReset(VerifyRequest verifyRequest);
-    User resetPassword(String email, String password);
+    void resetPassword(String email, String password);
 }

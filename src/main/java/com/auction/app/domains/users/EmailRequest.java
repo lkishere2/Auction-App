@@ -3,13 +3,9 @@ package com.auction.app.domains.users;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 
-public class UserResponse {
-    private String username;
+public class EmailRequest {
     private String email;
-    private BigDecimal balance;
 }

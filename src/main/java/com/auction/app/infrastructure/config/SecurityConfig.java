@@ -17,6 +17,7 @@ import java.util.List;
 
 @Component
 @EnableWebSecurity
+// TODO: Fix the filter chain in order to test in Swagger
 public class SecurityConfig {
 
     @Autowired

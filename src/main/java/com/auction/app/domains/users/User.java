@@ -2,8 +2,7 @@ package com.auction.app.domains.users;
 
 import com.auction.app.domains.products.Product;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,8 +11,13 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -78,4 +82,6 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> myStorage;
+    @Column(name = "balance",nullable = false)
+    private BigDecimal balance=BigDecimal.ZERO;
 }
