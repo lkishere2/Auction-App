@@ -82,6 +82,7 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> myStorage;
+
     @Column(name = "balance",nullable = false)
     private BigDecimal balance=BigDecimal.ZERO;
 }
