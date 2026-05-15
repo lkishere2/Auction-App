@@ -1,5 +1,6 @@
 package com.auction.app.domains.users;
 
+import com.auction.app.domains.feedback.Feedback;
 import com.auction.app.domains.products.Product;
 import jakarta.persistence.*;
 import lombok.*;
@@ -89,7 +90,9 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> myStorage;
 
-    @Column(name = "balance", nullable = false)
-    private BigDecimal balance = BigDecimal.ZERO;
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Feedback> myFeedback;
 
+    @Column(name = "balance", nullable = false, precision = 19, scale = 2, columnDefinition = "numeric(19,2) default 0.00")
+    private BigDecimal balance = BigDecimal.ZERO;
 }
