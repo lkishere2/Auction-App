@@ -24,8 +24,10 @@ public class UserController {
     public UserResponse getProfile(@PathVariable long id){
         return userService.getUserInfo(id);
     }
+
     @PostMapping("/update/") //add path , can change the data
     public UserResponse updateProfile(@RequestBody UserRequest  userRequest){
         return userService.updateUser(userRequest);
     }
+
 }

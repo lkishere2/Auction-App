@@ -9,11 +9,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class RegisterRequest {
-
-    @NotNull(message = "Username is required")
-    @NotEmpty(message = "Username cannot be empty")
-    private String username;
+public class ResetPasswordRequest {
 
     @NotNull(message = "Email is required")
     @NotEmpty(message = "Email cannot be empty")

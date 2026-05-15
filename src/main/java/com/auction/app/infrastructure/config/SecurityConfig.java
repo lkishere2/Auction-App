@@ -17,6 +17,7 @@ import java.util.List;
 
 @Component
 @EnableWebSecurity
+// TODO: Fix the filter chain in order to test in Swagger
 public class SecurityConfig {
 
     @Autowired
@@ -33,7 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
