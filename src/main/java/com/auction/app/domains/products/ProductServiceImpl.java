@@ -1,79 +1,102 @@
 package com.auction.app.domains.products;
+
+import com.auction.app.domains.users.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.Set;
 
 @Service
 public class ProductServiceImpl implements ProductService {
+
     @Autowired
     private ProductRepository productRepository;
-    //Crud
 
-    //Create
     @Override
-    public ProductResponse createProduct(ProductRequest productRequest){
-        Product newProduct = new Product();
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> getStorage(int page, int size, String keyword, Set<Tag> tags) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
-        newProduct.setProductName(productRequest.getProductName());
-        newProduct.setPrice(productRequest.getPrice());
-        newProduct.setQuantity(productRequest.getQuantity());
-        newProduct.setTags(productRequest.getTags());
+        Page<Product> products = productRepository.findByKeywordAndTags(keyword, tags, pageable);
 
-        productRepository.save(newProduct);
+        User currentUser = getCurrentUser();
 
-        ProductResponse newProductResponse = new ProductResponse();
-
-        newProductResponse.setProductName(newProduct.getProductName());
-        newProductResponse.setPrice(newProduct.getPrice());
-        newProductResponse.setQuantity(newProduct.getQuantity());
-        newProductResponse.setTags(newProduct.getTags());
-
-        return newProductResponse;
+        return products.map(product -> {
+            if (!product.getOwner().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("Unauthorized: You can only access your own storage.");
+            }
+            return mapToResponse(product);
+        });
     }
 
-    //Update
     @Override
-    public ProductResponse updateProduct(ProductRequest productRequest, Long id){
-        Product newProduct =productRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Product not found"));
+    @Transactional
+    public ProductResponse addProduct(ProductRequest productRequest) {
+        Product product = new Product();
+        product.setProductName(productRequest.getProductName());
+        product.setPrice(productRequest.getPrice());
+        product.setQuantity(productRequest.getQuantity());
+        product.setTags(productRequest.getTags());
+        product.setOwner(getCurrentUser());
+        product.setCreatedAt(LocalDateTime.now());
 
-        newProduct.setProductName(productRequest.getProductName());
-        newProduct.setPrice(productRequest.getPrice());
-        newProduct.setQuantity(productRequest.getQuantity());
-        newProduct.setTags(productRequest.getTags());
-
-        productRepository.save(newProduct);
-        ProductResponse newProductResponse = new ProductResponse();
-
-        newProductResponse.setProductName(newProduct.getProductName());
-        newProductResponse.setPrice(newProduct.getPrice());
-        newProductResponse.setQuantity(newProduct.getQuantity());
-        newProductResponse.setTags(newProduct.getTags());
-
-        return newProductResponse;
+        return mapToResponse(productRepository.save(product));
     }
 
-    //Delete
     @Override
-    public String deleteProduct(Long id){
-        productRepository.deleteById(id);
-        return "Deleted product";
-    }
-
-    //Read
-    @Override
-    public ProductResponse readProduct(Long id){
+    @Transactional
+    public ProductResponse editProduct(Long id, ProductRequest productRequest) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        ProductResponse productResponse = new ProductResponse();
+        if (!product.getOwner().getId().equals(getCurrentUser().getId())) {
+            throw new RuntimeException("Unauthorized: You do not own this product.");
+        }
 
-        productResponse.setProductName(product.getProductName());
-        productResponse.setPrice(product.getPrice());
-        productResponse.setQuantity(product.getQuantity());
-        productResponse.setTags(product.getTags());
+        product.setProductName(productRequest.getProductName());
+        product.setPrice(productRequest.getPrice());
+        product.setQuantity(productRequest.getQuantity());
+        product.setTags(productRequest.getTags());
+        product.setUpdatedAt(LocalDateTime.now());
 
-        return productResponse;
+        return mapToResponse(productRepository.save(product));
     }
 
+    @Override
+    @Transactional
+    public void deleteProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
 
+        if (!product.getOwner().getId().equals(getCurrentUser().getId())) {
+            throw new RuntimeException("Unauthorized: You cannot delete this product.");
+        }
+
+        productRepository.delete(product);
+    }
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (User) authentication.getPrincipal();
+    }
+
+    private ProductResponse mapToResponse(Product product) {
+        ProductResponse response = new ProductResponse();
+        response.setId(product.getId());
+        response.setProductName(product.getProductName());
+        response.setPrice(product.getPrice());
+        response.setQuantity(product.getQuantity());
+        response.setTags(product.getTags());
+        response.setCreatedAt(product.getCreatedAt());
+        response.setUpdatedAt(product.getUpdatedAt());
+        return response;
+    }
 }

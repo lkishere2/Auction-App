@@ -1,14 +1,12 @@
 package com.auction.app.domains.products;
 
+import org.springframework.data.domain.Page;
+
+import java.util.Set;
+
 public interface ProductService {
-
-    ProductResponse createProduct(ProductRequest productRequest);
-
-    ProductResponse readProduct(Long id);
-
-    ProductResponse updateProduct(ProductRequest productRequest, Long id);
-
-    String deleteProduct(Long id);
-
-
+    Page<ProductResponse> getStorage(int page, int size, String keyword, Set<Tag> tags);
+    ProductResponse addProduct(ProductRequest productRequest);
+    ProductResponse editProduct(Long id, ProductRequest productRequest);
+    void deleteProduct(Long id);
 }

@@ -1,18 +1,14 @@
 package com.auction.app.domains.products;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-import java.util.HashSet;
+import java.math.BigDecimal;
 import java.util.Set;
 
-@Setter
-@Getter
-
+@Data
 public class ProductRequest {
     private String productName;
-    private Long price;
+    private BigDecimal price;
     private int quantity;
-
-    private Set<Tag> tags = new HashSet<>();
+    private Set<Tag> tags;
 }
