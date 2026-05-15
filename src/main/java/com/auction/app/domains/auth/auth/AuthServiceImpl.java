@@ -3,10 +3,9 @@ package com.auction.app.domains.auth.auth;
 import com.auction.app.domains.auth.email.EmailService;
 import com.auction.app.domains.auth.refreshToken.RefreshToken;
 import com.auction.app.domains.auth.refreshToken.RefreshTokenService;
-import com.auction.app.domains.users.Provider;
-import com.auction.app.domains.users.Role;
-import com.auction.app.domains.users.User;
-import com.auction.app.domains.users.UserRepository;
+import com.auction.app.domains.users.users.Provider;
+import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.UserRepository;
 import com.auction.app.infrastructure.security.JwtService;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {

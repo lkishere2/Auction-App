@@ -1,4 +1,4 @@
-package com.auction.app.domains.users;
+package com.auction.app.domains.users.users;
 
 import com.auction.app.domains.feedback.Feedback;
 import com.auction.app.domains.products.Product;

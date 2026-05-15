@@ -1,7 +1,7 @@
 package com.auction.app.domains.auction.auction;
 
 import com.auction.app.domains.products.Product;
-import com.auction.app.domains.users.User;
+import com.auction.app.domains.users.users.User;
 import jakarta.persistence.*;
 import lombok.Data;
 

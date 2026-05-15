@@ -1,8 +1,10 @@
-package com.auction.app.domains.users;
+package com.auction.app.domains.users.users;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +43,21 @@ public class UserController {
     @PatchMapping("/update-password")
     public ResponseEntity<Void> updatePassword(@Valid @RequestBody PasswordRequest userRequest) {
         userService.updatePassword(userRequest);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(userService.getAllUsers(page, size));
+    }
+
+    @PatchMapping("/admin/disable/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> disableUser(@PathVariable Long id) {
+        userService.disableUser(id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,9 +1,9 @@
 package com.auction.app.infrastructure.config;
 
 import com.auction.app.domains.auth.refreshToken.RefreshTokenService;
-import com.auction.app.domains.users.Provider;
-import com.auction.app.domains.users.User;
-import com.auction.app.domains.users.UserRepository;
+import com.auction.app.domains.users.users.Provider;
+import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.UserRepository;
 import com.auction.app.infrastructure.security.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

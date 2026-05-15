@@ -1,6 +1,6 @@
 package com.auction.app.domains.products;
 
-import com.auction.app.domains.users.User;
+import com.auction.app.domains.users.users.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

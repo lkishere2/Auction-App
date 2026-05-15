@@ -1,7 +1,9 @@
-package com.auction.app.domains.users;
+package com.auction.app.domains.users.users;
 
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -69,6 +71,38 @@ public class UserServiceImpl implements UserService {
         }
 
         userRepository.updatePassword(currentUser.getId(), passwordEncoder.encode(passwordRequest.getNewPassword()));
+    }
+
+    @Override
+    public Page<UserResponse> getAllUsers(int page, int size) {
+        // Create pagination request
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        // Fetch users from repo and map Entity to DTO (UserResponse)
+        return userRepository.findAll(pageRequest).map(user -> {
+            UserResponse response = new UserResponse();
+            response.setUsername(user.getUsername());
+            response.setEmail(user.getEmail());
+            response.setBalance(user.getBalance());
+            return response;
+        });
+    }
+
+    @Override
+    @Transactional
+    public void disableUser(Long id) {
+        User currentUser = getCurrentUser();
+
+        // Prevent admin from disabling their own account
+        if (currentUser.getId().equals(id)) {
+            throw new RuntimeException("You cannot disable your own account");
+        }
+
+        User userToDisable = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        userToDisable.setRole(Role.DISABLE);
+        userRepository.save(userToDisable);
     }
 
     private User getCurrentUser() {

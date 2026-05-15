@@ -1,4 +1,4 @@
-package com.auction.app.domains.users;
+package com.auction.app.domains.users.users;
 
 import lombok.Getter;
 import lombok.Setter;

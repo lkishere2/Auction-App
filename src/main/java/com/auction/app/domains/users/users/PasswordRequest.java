@@ -1,4 +1,4 @@
-package com.auction.app.domains.users;
+package com.auction.app.domains.users.users;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

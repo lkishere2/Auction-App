@@ -1,6 +1,6 @@
 package com.auction.app.infrastructure.config;
 
-import com.auction.app.domains.users.UserRepository;
+import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

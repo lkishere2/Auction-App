@@ -2,7 +2,7 @@ package com.auction.app.domains.auction.auction;
 
 import com.auction.app.domains.products.Product;
 import com.auction.app.domains.products.ProductRepository;
-import com.auction.app.domains.users.User;
+import com.auction.app.domains.users.users.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;

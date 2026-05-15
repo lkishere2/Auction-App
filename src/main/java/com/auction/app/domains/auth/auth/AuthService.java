@@ -1,6 +1,6 @@
 package com.auction.app.domains.auth.auth;
 
-import com.auction.app.domains.users.User;
+import com.auction.app.domains.users.users.User;
 import jakarta.servlet.http.HttpServletRequest;
 
 public interface AuthService {

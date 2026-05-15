@@ -1,6 +1,6 @@
 package com.auction.app.domains.auth.refreshToken;
 
-import com.auction.app.domains.users.User;
+import com.auction.app.domains.users.users.User;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;

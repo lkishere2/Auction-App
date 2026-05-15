@@ -1,4 +1,4 @@
-package com.auction.app.domains.users;
+package com.auction.app.domains.users.users;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

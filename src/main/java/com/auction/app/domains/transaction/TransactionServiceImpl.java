@@ -1,7 +1,7 @@
 package com.auction.app.domains.transaction;
 
-import com.auction.app.domains.users.User;
-import com.auction.app.domains.users.UserRepository;
+import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

@@ -1,6 +1,6 @@
 package com.auction.app.domains.feedback;
 
-import com.auction.app.domains.users.User;
+import com.auction.app.domains.users.users.User;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
