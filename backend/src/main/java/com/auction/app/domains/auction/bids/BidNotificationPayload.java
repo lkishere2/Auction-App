@@ -1,6 +1,5 @@
-package com.auction.app.domains.auction.auction;
+package com.auction.app.domains.auction.bids;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -13,13 +12,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuctionState implements Serializable{
+public class BidNotificationPayload {
     private Long auctionId;
     private BigDecimal currentPrice;
-    private BigDecimal minBidIncrement;
+    private BigDecimal minNextBid;
+    private String bidderLabel;
     private Instant endTime;
+    private boolean extended;
     private Integer bidCount;
-    private Long winnerId;
-    private String winnerLabel;
-    private AuctionStatus status;
+    private boolean ended; // ← add this flag to indicate auction end
 }

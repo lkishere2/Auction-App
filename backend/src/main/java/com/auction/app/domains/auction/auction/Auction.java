@@ -1,16 +1,29 @@
 package com.auction.app.domains.auction.auction;
 
-import com.auction.app.domains.products.Product;
-import com.auction.app.domains.users.users.User;
-import jakarta.persistence.*;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 
-@Data
+import com.auction.app.domains.inventory.Item;
+import com.ltnc.auction.domain.user.User;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+
 @Entity
+@Getter
+@Setter
 @Table(name = "auctions")
 public class Auction {
 
@@ -22,11 +35,9 @@ public class Auction {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = true)
-    private Product product;
-
-    private int quantity;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_id", nullable = true)
+    private Item item;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal startingPrice;

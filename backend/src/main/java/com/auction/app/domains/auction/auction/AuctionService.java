@@ -1,120 +1,162 @@
 package com.auction.app.domains.auction.auction;
 
-import com.auction.app.domains.products.Product;
-import com.auction.app.domains.products.ProductRepository;
-import com.auction.app.domains.users.users.User;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.auction.app.domains.exceptions.AuctionNotFoundException;
+import com.auction.app.domains.exceptions.InvalidAuctionStateException;
+import com.auction.app.domains.exceptions.ItemNotAvailableException;
+import com.auction.app.domains.exceptions.UnauthorizedActionException;
+import com.auction.app.domains.inventory.Item;
+import com.auction.app.domains.inventory.ItemStatus;
+import com.auction.app.domains.inventory.ItemStorageRepository;
+import com.ltnc.auction.domain.user.User;
+import com.ltnc.auction.domain.user.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class AuctionService {
 
-    @Autowired
-    private AuctionRepository auctionRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    private static final String STATE_PREFIX = "auction:state:";
-    private static final String QUEUE_PREFIX = "auction:queue:";
+    private final AuctionRepository auctionRepository;
+    private final ItemStorageRepository itemStorageRepository;
+    private final UserRepository userRepository;
+    private final AuctionCacheAdapter auctionCacheAdapter; // ← new
 
     @Transactional
-    public AuctionResponse createAuction(AuctionRequest request) {
-
-        if (!request.getEndTime().isAfter(request.getStartTime())) {
-            throw new RuntimeException("End time must be after start time");
+    public AuctionResponse createAuction(Long sellerId, AuctionRequest request) {
+        if (!request.endTime().isAfter(request.startTime())) {
+            throw new InvalidAuctionStateException("End time must be after start time");
         }
 
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+        User seller = userRepository.findById(sellerId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (product.getQuantity() < request.getQuantity()) {
-            throw new RuntimeException("Insufficient product stock available. Requested: "
-                    + request.getQuantity() + ", Available: " + product.getQuantity());
+        Item item = itemStorageRepository.findByIdAndOwnerUserId(request.itemId(), sellerId)
+                .orElseThrow(() -> new ItemNotAvailableException("Item not found in your inventory"));
+
+        boolean hasActiveOrUpcomingAuction = auctionRepository.existsByItem_IdAndStatusIn(
+                item.getId(), List.of(AuctionStatus.UPCOMING, AuctionStatus.ACTIVE));
+
+        if (hasActiveOrUpcomingAuction) {
+            throw new ItemNotAvailableException("Item is already listed in another active or upcoming auction");
         }
 
-        product.setQuantity(product.getQuantity() - request.getQuantity());
-        productRepository.save(product);
+        if (item.getStatus() != ItemStatus.AVAILABLE) {
+            item.setStatus(ItemStatus.AVAILABLE);
+        }
 
-        User seller = getCurrentUser();
+        item.setStatus(ItemStatus.LISTED);
+        itemStorageRepository.save(item);
 
-        Auction newAuction = new Auction();
-        newAuction.setSeller(seller);
-        newAuction.setProduct(product);
-        newAuction.setQuantity(request.getQuantity());
-        newAuction.setStartingPrice(request.getStartingPrice());
-        newAuction.setCurrentPrice(request.getStartingPrice());
-        newAuction.setStartTime(request.getStartTime());
-        newAuction.setEndTime(request.getEndTime());
-        newAuction.setStatus(AuctionStatus.UPCOMING);
-        newAuction.setBidCount(0);
-        newAuction.recalculateMinBidIncrement();
+        Auction auction = new Auction();
+        auction.setSeller(seller);
+        auction.setItem(item);
+        auction.setStartingPrice(request.startingPrice());
+        auction.setCurrentPrice(request.startingPrice());
+        auction.recalculateMinBidIncrement();
+        auction.setStartTime(request.startTime());
+        auction.setEndTime(request.endTime());
 
-        Auction savedAuction = auctionRepository.save(newAuction);
+        Auction saved = auctionRepository.save(auction);
 
-        return mapToResponse(savedAuction);
+        // cache UPCOMING state in Redis immediately
+        // so it's ready the moment scheduler flips it to ACTIVE
+        cacheAuctionState(saved);
+
+        return AuctionResponse.from(saved);
     }
 
     @Transactional
-    public AuctionResponse cancelAuction(Long auctionId) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new RuntimeException("Auction not found"));
+    public AuctionResponse cancelAuction(Long sellerId, Long auctionId) {
+        Auction auction = auctionRepository.findByIdWithDetails(auctionId)
+                .orElseThrow(() -> new AuctionNotFoundException("Auction not found"));
 
-        if (!auction.getSeller().getId().equals(getCurrentUser().getId())) {
-            throw new RuntimeException("You are not the seller of this auction");
+        if (!auction.getSeller().getUserId().equals(sellerId)) {
+            throw new UnauthorizedActionException("You are not the seller of this auction");
         }
 
         if (auction.getStatus() != AuctionStatus.UPCOMING) {
-            throw new RuntimeException("Only UPCOMING auctions can be cancelled");
+            throw new InvalidAuctionStateException("Only UPCOMING auctions can be cancelled");
         }
 
-        Product product = auction.getProduct();
-        if (product != null) {
-            product.setQuantity(product.getQuantity() + auction.getQuantity());
-            productRepository.save(product);
-        }
+        auction.getItem().setStatus(ItemStatus.AVAILABLE);
+        itemStorageRepository.save(auction.getItem());
 
         auction.setStatus(AuctionStatus.CANCELLED);
         Auction saved = auctionRepository.save(auction);
 
-        return mapToResponse(saved);
+        // clear from Redis — no longer needed
+        auctionCacheAdapter.clearAuctionCache(auctionId);
+
+        return AuctionResponse.from(saved);
     }
 
+    public AuctionResponse getAuction(Long auctionId) {
+        // check Redis first for ACTIVE auctions — faster
+        AuctionState state = auctionCacheAdapter.getAuctionState(auctionId);
 
+        if (state != null && state.getStatus() == AuctionStatus.ACTIVE) {
+            // get base auction from DB but overlay hot fields from Redis
+            Auction auction = auctionRepository.findByIdWithDetails(auctionId)
+                    .orElseThrow(() -> new AuctionNotFoundException("Auction not found"));
+            return AuctionResponse.fromWithState(auction, state);
+        }
 
-
-
-    private AuctionResponse mapToResponse(Auction auction) {
-        Product product = auction.getProduct();
-
-        return new AuctionResponse(
-                auction.getId(),
-                auction.getSeller() != null ? auction.getSeller().getDisplayName() : null,
-                product != null ? product.getId() : null,
-                product != null ? product.getProductName() : null,
-                product != null ? product.getTags() : null,
-                auction.getQuantity(),
-                auction.getStartingPrice(),
-                auction.getCurrentPrice(),
-                auction.getMinBidIncrement(),
-                auction.getStartTime(),
-                auction.getEndTime(),
-                auction.getStatus(),
-                auction.getWinner() != null ? auction.getWinner().getDisplayName() : null,
-                auction.getBidCount()
-        );
+        // fallback to DB for UPCOMING/ENDED/CANCELLED
+        Auction auction = auctionRepository.findByIdWithDetails(auctionId)
+                .orElseThrow(() -> new AuctionNotFoundException("Auction not found"));
+        return AuctionResponse.from(auction);
     }
 
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (User) authentication.getPrincipal();
+    public List<AuctionResponse> getActiveAuctions() {
+        return auctionRepository.findByStatusWithDetails(AuctionStatus.ACTIVE)
+                .stream()
+                .map(auction -> {
+                    AuctionState state = auctionCacheAdapter.getAuctionState(auction.getId());
+                    return state != null
+                        ? AuctionResponse.fromWithState(auction, state)
+                        : AuctionResponse.from(auction);
+                })
+                .toList();
     }
 
+    public List<AuctionResponse> getUpcomingAuctions() {
+        return auctionRepository.findByStatusWithDetails(AuctionStatus.UPCOMING)
+                .stream()
+                .map(AuctionResponse::from)
+                .toList();
+    }
+
+    public List<AuctionResponse> getMyAuctions(Long sellerId) {
+        return auctionRepository.findBySellerUserIdWithDetails(sellerId)
+                .stream()
+                .map(auction -> {
+                    AuctionState state = auctionCacheAdapter.getAuctionState(auction.getId());
+                    return state != null
+                        ? AuctionResponse.fromWithState(auction, state)
+                        : AuctionResponse.from(auction);
+                })
+                .toList();
+    }
+
+    // ─────────────────────────────────────────
+    // helper — build and cache AuctionState from entity
+    // ─────────────────────────────────────────
+    public void cacheAuctionState(Auction auction) {
+        AuctionState state = AuctionState.builder()
+                .auctionId(auction.getId())
+                .currentPrice(auction.getCurrentPrice())
+                .minBidIncrement(auction.getMinBidIncrement())
+                .endTime(auction.getEndTime())
+                .bidCount(auction.getBidCount())
+                .winnerId(null)
+                .winnerLabel(null)
+                .status(auction.getStatus())
+                .build();
+        auctionCacheAdapter.cacheAuctionState(auction.getId(), state);
+    }
 }
