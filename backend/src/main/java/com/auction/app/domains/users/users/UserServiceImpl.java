@@ -58,10 +58,6 @@ public class UserServiceImpl implements UserService {
     public void updatePassword(PasswordRequest passwordRequest) {
         User currentUser = getCurrentUser();
 
-        if (currentUser.getProvider() == Provider.GOOGLE) {
-            throw new RuntimeException("This account uses Google Sign-In and does not have a local password");
-        }
-
         if (!passwordEncoder.matches(passwordRequest.getCurrentPassword(), currentUser.getPassword())) {
             throw new RuntimeException("Current password is incorrect");
         }

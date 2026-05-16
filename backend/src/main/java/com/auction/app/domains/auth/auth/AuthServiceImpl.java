@@ -64,9 +64,7 @@ public class AuthServiceImpl implements AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
@@ -114,8 +112,7 @@ public class AuthServiceImpl implements AuthService {
             if (current != null) {
                 refreshTokenService.deleteRefreshToken(
                         refreshToken,
-                        String.valueOf(current.getUserId())
-                );
+                        String.valueOf(current.getUserId()));
             }
         }
 
@@ -170,9 +167,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = optionalUser.get();
-        if (user.getProvider().equals(Provider.GOOGLE)) {
-            throw new RuntimeException("This account use Google sign in, please log in with Google");
-        }
 
         if (!user.isEnabled()) {
             throw new RuntimeException("Account is not verified. Please verify your account.");
@@ -226,7 +220,8 @@ public class AuthServiceImpl implements AuthService {
                 + "<p style=\"font-size: 16px;\">Please enter the verification code below to continue:</p>"
                 + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">"
                 + "<h3 style=\"color: #333;\">Verification Code:</h3>"
-                + "<p style=\"font-size: 18px; font-weight: bold; color: #007bff;\">" + user.getVerificationCode() + "</p>"
+                + "<p style=\"font-size: 18px; font-weight: bold; color: #007bff;\">" + user.getVerificationCode()
+                + "</p>"
                 + "</div>"
                 + "</div>"
                 + "</body>"

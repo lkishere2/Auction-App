@@ -98,5 +98,6 @@ public class User implements UserDetails {
     private List<Transaction> transactions;
 
     @Column(name = "balance", nullable = false, precision = 19, scale = 2, columnDefinition = "numeric(19,2) default 0.00")
+    @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
 }
