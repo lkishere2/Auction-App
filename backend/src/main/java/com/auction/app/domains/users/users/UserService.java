@@ -1,5 +1,9 @@
 package com.auction.app.domains.users.users;
 
+import com.auction.app.domains.users.users.dtos.EmailRequest;
+import com.auction.app.domains.users.users.dtos.PasswordRequest;
+import com.auction.app.domains.users.users.dtos.UserResponse;
+import com.auction.app.domains.users.users.dtos.UsernameRequest;
 import org.springframework.data.domain.Page;
 
 public interface UserService {

@@ -1,4 +1,4 @@
-package com.auction.app.domains.auth.auth;
+package com.auction.app.domains.auth.auth.dtos;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

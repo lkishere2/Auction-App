@@ -1,5 +1,6 @@
 package com.auction.app.domains.auth.auth;
 
+import com.auction.app.domains.auth.auth.dtos.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

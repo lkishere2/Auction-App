@@ -1,5 +1,10 @@
 package com.auction.app.domains.auth.auth;
 
+import com.auction.app.domains.auth.auth.dtos.AuthResponse;
+import com.auction.app.domains.auth.auth.dtos.LoginRequest;
+import com.auction.app.domains.auth.auth.dtos.RegisterRequest;
+import com.auction.app.domains.auth.auth.dtos.VerifyRequest;
+import com.auction.app.domains.auth.auth.exceptions.*;
 import com.auction.app.domains.auth.email.EmailService;
 import com.auction.app.domains.auth.refreshToken.RefreshToken;
 import com.auction.app.domains.auth.refreshToken.RefreshTokenService;
@@ -11,6 +16,7 @@ import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -42,8 +48,24 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void register(RegisterRequest request, HttpServletRequest httpRequest) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+        Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            if (user.isEnabled()) {
+                throw new UserAlreadyExistsException("Email already registered");
+            }
+
+            user.setUsername(request.getUsername());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setVerificationCode(generateVerificationCode());
+            user.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
+            user.setRequestPasswordReset(false);
+            user.setPasswordResetVerified(false);
+            userRepository.save(user);
+            sendVerificationEmail(user);
+            return;
         }
 
         User newUser = User.builder()
@@ -55,6 +77,7 @@ public class AuthServiceImpl implements AuthService {
                 .verificationExpiration(LocalDateTime.now().plusMinutes(15))
                 .enabled(false)
                 .build();
+
         userRepository.save(newUser);
         sendVerificationEmail(newUser);
     }
@@ -67,10 +90,11 @@ public class AuthServiceImpl implements AuthService {
                         request.getPassword()));
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                // Throw BadCredentialsException here to obscure whether a user exists or not to potential attackers
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         if (!user.isEnabled()) {
-            throw new RuntimeException("Account is not verified. Please verify your account.");
+            throw new AccountNotVerifiedException("Account is not verified. Please verify your account.");
         }
 
         String accessToken = jwtService.generateToken(user);
@@ -88,7 +112,7 @@ public class AuthServiceImpl implements AuthService {
         RefreshToken currentToken = refreshTokenService.verifyRefreshToken(refreshToken, request);
 
         User user = userRepository.findById(currentToken.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         refreshTokenService.deleteRefreshToken(refreshToken, String.valueOf(user.getId()));
 
@@ -126,16 +150,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void verifyUser(VerifyRequest verifyRequest) {
         User user = userRepository.findByEmail(verifyRequest.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (user.isEnabled()) {
-            throw new RuntimeException("Account is already verified");
+            throw new AccountAlreadyVerifiedException("Account is already verified");
         }
         if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Verification code expired");
+            throw new VerificationCodeExpiredException("Verification code expired");
         }
         if (!user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
-            throw new RuntimeException("Invalid verification code");
+            throw new InvalidVerificationCodeException("Invalid verification code");
         }
 
         user.setEnabled(true);
@@ -147,10 +171,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void resendVerificationCode(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (user.isEnabled()) {
-            throw new RuntimeException("Account is already verified");
+            throw new AccountAlreadyVerifiedException("Account is already verified");
         }
 
         user.setVerificationCode(generateVerificationCode());
@@ -169,7 +193,7 @@ public class AuthServiceImpl implements AuthService {
         User user = optionalUser.get();
 
         if (!user.isEnabled()) {
-            throw new RuntimeException("Account is not verified. Please verify your account.");
+            throw new AccountNotVerifiedException("Account is not verified. Please verify your account.");
         }
 
         user.setVerificationCode(generateVerificationCode());
@@ -182,16 +206,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void verifyPasswordReset(VerifyRequest verifyRequest) {
         User user = userRepository.findByEmail(verifyRequest.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (!user.isRequestPasswordReset()) {
-            throw new RuntimeException("You are not request to reset password, try again later");
+            throw new InvalidPasswordResetFlowException("You have not requested to reset your password. Try again later.");
         }
         if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Verification code expired");
+            throw new VerificationCodeExpiredException("Verification code expired");
         }
         if (!user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
-            throw new RuntimeException("Invalid verification code");
+            throw new InvalidVerificationCodeException("Invalid verification code");
         }
 
         user.setVerificationCode(null);
@@ -203,10 +227,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void resetPassword(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (!user.isPasswordResetVerified()) {
-            throw new RuntimeException("Password reset has not been verified");
+            throw new InvalidPasswordResetFlowException("Password reset has not been verified");
         }
 
         user.setPassword(passwordEncoder.encode(password));
@@ -234,7 +258,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             emailService.sendVerificationMail(user.getEmail(), subject, htmlMessage);
         } catch (MessagingException e) {
-            throw new RuntimeException("Failed to send verification email", e);
+            throw new EmailSendFailureException("Failed to send verification email");
         }
     }
 

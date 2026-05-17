@@ -1,4 +1,4 @@
-package com.auction.app.domains.auth.auth;
+package com.auction.app.domains.auth.auth.dtos;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -9,7 +9,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ResetPasswordRequest {
+public class RegisterRequest {
+
+    @NotNull(message = "Username is required")
+    @NotEmpty(message = "Username cannot be empty")
+    private String username;
 
     @NotNull(message = "Email is required")
     @NotEmpty(message = "Email cannot be empty")

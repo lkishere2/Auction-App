@@ -1,5 +1,9 @@
 package com.auction.app.domains.auth.auth;
 
+import com.auction.app.domains.auth.auth.dtos.AuthResponse;
+import com.auction.app.domains.auth.auth.dtos.LoginRequest;
+import com.auction.app.domains.auth.auth.dtos.RegisterRequest;
+import com.auction.app.domains.auth.auth.dtos.VerifyRequest;
 import com.auction.app.domains.users.users.User;
 import jakarta.servlet.http.HttpServletRequest;
 
