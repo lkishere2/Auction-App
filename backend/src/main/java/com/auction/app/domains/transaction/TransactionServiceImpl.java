@@ -1,5 +1,6 @@
 package com.auction.app.domains.transaction;
 
+import com.auction.app.domains.transaction.exceptions.TransactionNotFoundException;
 import com.auction.app.domains.users.users.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +62,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public void acceptTransaction(ClientRequest clientRequest) {
         Transaction transaction = transactionRepository.findById(clientRequest.getTransactionId())
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
 
         User user = userRepository.findById(clientRequest.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));

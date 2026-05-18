@@ -14,7 +14,7 @@ import com.auction.app.domains.users.users.UserRepository;
 import com.auction.app.infrastructure.security.JwtService;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;

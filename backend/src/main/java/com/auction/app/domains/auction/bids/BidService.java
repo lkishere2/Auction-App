@@ -11,6 +11,7 @@ import com.auction.app.domains.auction.bids.dtos.BidNotificationPayload;
 import com.auction.app.domains.auction.bids.dtos.BidRequest;
 import com.auction.app.domains.auction.bids.dtos.BidResponse;
 import com.auction.app.domains.auction.bids.dtos.PendingBid;
+import com.auction.app.domains.auction.bids.exceptions.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -47,14 +48,14 @@ public class BidService {
 
         // Use sellerId from cache — no DB hit needed
         if (state.getSellerId().equals(bidder.getId())) {
-            throw new RuntimeException("You cannot bid on your own auction");
+            throw new SelfBiddingException("You cannot bid on your own auction");
         }
 
         validateBidAmount(request.getAmount(), state);
         validateSpendableBalance(bidder, request.getAmount());
 
         Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new RuntimeException("Auction not found"));
+                .orElseThrow(() -> new AuctionNotFoundException("Auction not found"));
 
         // Persist PENDING bid immediately — funds are locked from this point
         Bid pendingBid = Bid.builder()
@@ -88,7 +89,7 @@ public class BidService {
 
         // Fetch the existing PENDING bid record from DB
         Bid bid = bidRepository.findById(pendingBid.getBidId())
-                .orElseThrow(() -> new RuntimeException("Bid record not found"));
+                .orElseThrow(() -> new BidNotFoundException("Bid record not found"));
 
         AuctionState state = auctionCacheAdapter.getAuctionState(auctionId);
 
@@ -101,7 +102,7 @@ public class BidService {
         }
 
         User bidder = userRepository.findById(pendingBid.getBidderId())
-                .orElseThrow(() -> new RuntimeException("Bidder not found"));
+                .orElseThrow(() -> new BidderNotFoundException("Bidder not found"));
 
         // Re-check spendable balance at processing time — REFUND if insufficient
         if (!hasSufficientBalance(bidder, pendingBid.getAmount())) {
@@ -157,7 +158,7 @@ public class BidService {
     private AuctionState getActiveAuctionState(Long auctionId) {
         AuctionState state = auctionCacheAdapter.getAuctionState(auctionId);
         if (state == null || state.getStatus() != AuctionStatus.ACTIVE) {
-            throw new RuntimeException("Auction not found or not active");
+            throw new InvalidAutionStateException("Auction not found or not active");
         }
         return state;
     }
@@ -165,13 +166,13 @@ public class BidService {
     private void validateBidAmount(BigDecimal amount, AuctionState state) {
         BigDecimal minimumBid = state.getCurrentPrice().add(state.getMinBidIncrement());
         if (amount.compareTo(minimumBid) < 0) {
-            throw new RuntimeException("Bid must be at least " + minimumBid + " (current price + 5%)");
+            throw new InvalidBidAmountException("Bid must be at least " + minimumBid + " (current price + 5%)");
         }
     }
 
     private void validateSpendableBalance(User bidder, BigDecimal amount) {
         if (amount.compareTo(getSpendableBalance(bidder)) > 0) {
-            throw new RuntimeException("Insufficient balance. Spendable: " + getSpendableBalance(bidder));
+            throw new InsufficientBalanceException("Insufficient balance. Spendable: " + getSpendableBalance(bidder));
         }
     }
 

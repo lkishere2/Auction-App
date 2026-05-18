@@ -14,4 +14,5 @@ public interface TransactionService {
     Page<ClientRequest> getAllTransactionRequest(int page, int size);
     void acceptTransaction(ClientRequest request);
     void cancelTransaction(Long id);
+
 }
