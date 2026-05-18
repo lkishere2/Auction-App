@@ -12,7 +12,6 @@ public interface TransactionService {
 
     // ADMIN
     Page<ClientRequest> getAllTransactionRequest(int page, int size);
-    void deposit(Long userId, BigDecimal amount);
-    void withdraw(Long userId, BigDecimal amount);
+    void acceptTransaction(ClientRequest request);
     void cancelTransaction(Long id);
 }

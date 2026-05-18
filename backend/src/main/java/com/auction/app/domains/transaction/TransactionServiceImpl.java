@@ -1,5 +1,10 @@
 package com.auction.app.domains.transaction;
 
+import com.auction.app.domains.auth.auth.exceptions.UserNotFoundException;
+import com.auction.app.domains.transaction.exceptions.AuthorizedException;
+import com.auction.app.domains.transaction.exceptions.PoorException;
+import com.auction.app.domains.transaction.exceptions.TransactionNotFoundException;
+import com.auction.app.domains.transaction.exceptions.TransactionNotPendingException;
 import com.auction.app.domains.users.users.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,38 +30,26 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Page<TransactionResponse> getUserTransaction(int page, int size) {
-        User currentUser = getCurrentUser();
-
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return transactionRepository.getTransactionByUserId(pageable, currentUser.getId())
+        return transactionRepository.getTransactionByUserId(pageable, currentUser().getId())
                 .map(this::mapToResponse);
     }
 
     @Override
     @Transactional
     public TransactionResponse createTransaction(TransactionRequest transactionRequest) {
-        User currentUser = getCurrentUser();
-
-        Transaction newTransaction = new Transaction();
-        newTransaction.setUser(currentUser);
-        newTransaction.setAmount(transactionRequest.getAmount());
-        newTransaction.setType(transactionRequest.getType());
-        newTransaction.setStatus(TransactionStatus.PENDING);
-
-        Transaction saved = transactionRepository.save(newTransaction);
-
-        return mapToResponse(saved);
+        Transaction newTransaction = mapToEntity(transactionRequest);
+        return mapToResponse(transactionRepository.save(newTransaction));
     }
 
     @Override
     @Transactional
     public void deleteTransaction(Long id) {
         Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
 
-        User currentUser = getCurrentUser();
-        if (!transaction.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized: You do not make this transaction.");
+        if (!transaction.getUser().getId().equals(currentUser().getId())) {
+            throw new AuthorizedException("Unauthorized: You do not make this transaction.");
         }
 
         transactionRepository.delete(transaction);
@@ -71,43 +64,29 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public void deposit(Long userId, BigDecimal amount) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public void acceptTransaction(ClientRequest clientRequest) {
+        Transaction transaction = transactionRepository.findById(clientRequest.getTransactionId())
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
 
-        // Update user balance (Adjust setter/getter based on your User entity)
-        BigDecimal currentBalance = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
-        user.setBalance(currentBalance.add(amount));
-        userRepository.save(user);
+        User user = userRepository.findById(clientRequest.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // Create and log the successful deposit transaction
-        Transaction transaction = new Transaction();
-        transaction.setUser(user);
-        transaction.setAmount(amount);
-        transaction.setType(TransactionType.DEPOSIT); // Assuming TransactionType enum exists
-        transaction.setStatus(TransactionStatus.SUCCESS);
-        transactionRepository.save(transaction);
-    }
-
-    @Override
-    @Transactional
-    public void withdraw(Long userId, BigDecimal amount) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        BigDecimal currentBalance = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
-
-        if (currentBalance.compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient funds for withdrawal.");
+        if (transaction.getStatus() != TransactionStatus.PENDING) {
+            throw new TransactionNotPendingException("Only pending transactions can be accepted.");
         }
 
-        user.setBalance(currentBalance.subtract(amount));
-        userRepository.save(user);
+        BigDecimal currentBalance = user.getBalance();
+        if (clientRequest.getType().equals(TransactionType.DEPOSIT)) {
+            user.setBalance(currentBalance.add(clientRequest.getAmount()));
+        }
+        else {
+            if (currentBalance.compareTo(clientRequest.getAmount()) < 0) {
+                throw new PoorException("Insufficient funds for withdrawal.");
+            }
+            user.setBalance(currentBalance.subtract(clientRequest.getAmount()));
+        }
 
-        Transaction transaction = new Transaction();
-        transaction.setUser(user);
-        transaction.setAmount(amount);
-        transaction.setType(TransactionType.WITHDRAWAL);
+        userRepository.save(user);
         transaction.setStatus(TransactionStatus.SUCCESS);
         transactionRepository.save(transaction);
     }
@@ -116,18 +95,19 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public void cancelTransaction(Long id) {
         Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
 
         // Only PENDING transactions should typically be cancellable
         if (transaction.getStatus() != TransactionStatus.PENDING) {
-            throw new RuntimeException("Only pending transactions can be cancelled.");
+            throw new TransactionNotPendingException("Only pending transactions can be cancelled.");
         }
 
         transaction.setStatus(TransactionStatus.FAILED);
         transactionRepository.save(transaction);
     }
 
-    private User getCurrentUser() {
+    // Helpers
+    private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (User) authentication.getPrincipal();
     }
@@ -145,12 +125,21 @@ public class TransactionServiceImpl implements TransactionService {
         User user = transaction.getUser();
 
         return ClientRequest.builder()
+                .transactionId(transaction.getId())
                 .userId(user.getId())
                 .username(user.getDisplayName())
                 .email(user.getEmail())
                 .amount(transaction.getAmount())
                 .type(transaction.getType())
                 .createdAt(transaction.getCreatedAt())
+                .build();
+    }
+
+    private Transaction mapToEntity(TransactionRequest request) {
+        return Transaction.builder()
+                .user(currentUser())
+                .amount(request.getAmount())
+                .type(request.getType())
                 .build();
     }
 }

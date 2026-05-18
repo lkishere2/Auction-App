@@ -2,14 +2,18 @@ package com.auction.app.domains.feedback;
 
 import com.auction.app.domains.users.users.User;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "feedbacks")
+@Builder
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class Feedback {
 
     @Id
@@ -24,11 +28,7 @@ public class Feedback {
     private String content;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 
 }

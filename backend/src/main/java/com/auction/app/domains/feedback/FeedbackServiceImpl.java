@@ -17,24 +17,14 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     @Transactional
     public FeedbackResponse createFeedback(FeedbackRequest request) {
-        Feedback feedback = new Feedback();
-        feedback.setContent(request.getContent());
-        feedback.setClient(getCurrentUser());
-
+        Feedback feedback = mapToEntity(request);
         return mapToResponse(feedbackRepository.save(feedback));
     }
 
     @Override
     @Transactional
     public FeedbackResponse updateFeedback(Long id, FeedbackRequest request) {
-        Feedback feedback = feedbackRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Feedback not found"));
-
-        User currentUser = getCurrentUser();
-        if (!feedback.getClient().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized: You do not own this feedback.");
-        }
-
+        Feedback feedback = findAndValidateCurrentUser(id);
         feedback.setContent(request.getContent());
         return mapToResponse(feedbackRepository.save(feedback));
     }
@@ -42,14 +32,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     @Transactional
     public void deleteFeedback(Long id) {
-        Feedback feedback = feedbackRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Feedback not found"));
-
-        User currentUser = getCurrentUser();
-        if (!feedback.getClient().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized: You cannot delete this feedback.");
-        }
-
+        Feedback feedback = findAndValidateCurrentUser(id);
         feedbackRepository.delete(feedback);
     }
 
@@ -57,8 +40,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Transactional(readOnly = true)
     public Slice<FeedbackResponse> getCurrentUserFeedback(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Slice<Feedback> feedbackSlice = feedbackRepository.findAllByUser(getCurrentUser(), pageable);
-
+        Slice<Feedback> feedbackSlice = feedbackRepository.findAllByUser(currentUser(), pageable);
         return feedbackSlice.map(this::mapToResponse);
     }
 
@@ -69,18 +51,38 @@ public class FeedbackServiceImpl implements FeedbackService {
         return feedbackRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    private User getCurrentUser() {
+    //Helpers
+    private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (User) authentication.getPrincipal();
     }
 
+    private Feedback findAndValidateCurrentUser(Long id) {
+        Feedback feedback = feedbackRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Feedback not found"));
+
+        if (!feedback.getClient().getId().equals(currentUser().getId())) {
+            throw new RuntimeException("Unauthorized: You cannot delete this feedback.");
+        }
+
+        return feedback;
+    }
+
+    private Feedback mapToEntity(FeedbackRequest request) {
+        return Feedback.builder()
+                .content(request.getContent())
+                .client(currentUser())
+                .build();
+    }
+
     private FeedbackResponse mapToResponse(Feedback feedback) {
-        return new FeedbackResponse(
-                feedback.getId(),
-                feedback.getClient().getDisplayName(),
-                feedback.getClient().getEmail(),
-                feedback.getContent(),
-                feedback.getCreatedAt()
-        );
+        User client = feedback.getClient();
+        return FeedbackResponse.builder()
+                .id(feedback.getId())
+                .username(client.getDisplayName())
+                .email(client.getEmail())
+                .content(feedback.getContent())
+                .createdAt(feedback.getCreatedAt())
+                .build();
     }
 }

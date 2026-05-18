@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClientRequest {
+    private Long transactionId;
     private Long userId;
     private String username;
     private String email;

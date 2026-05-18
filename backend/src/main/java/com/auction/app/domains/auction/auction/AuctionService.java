@@ -5,7 +5,10 @@ import java.util.List;
 import com.auction.app.domains.auction.auction.dtos.AuctionRequest;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
 import com.auction.app.domains.auction.auction.dtos.AuctionState;
+import com.auction.app.domains.auction.auction.exception.*;
 import com.auction.app.domains.auction.auction.redis.AuctionCacheAdapter;
+import com.auction.app.domains.products.exceptions.ProductNotFoundException;
+import com.auction.app.domains.transaction.exceptions.AuthorizedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -29,25 +32,25 @@ public class AuctionService {
     public AuctionResponse createAuction(AuctionRequest request) {
         // Validate the time
         if (!request.getEndTime().isAfter(request.getStartTime())) {
-            throw new RuntimeException("End time must be after start time");
+            throw new InvalidEndTimeException("End time must be after start time");
         }
 
         // Verify if the product is in user's inventory
         User currentSeller = getCurrentUser();
         Product product = productRepository.findByIdAndOwnerUserId(request.getProductId(), currentSeller.getId())
-                .orElseThrow(() -> new RuntimeException("Product not found in your inventory"));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found in your inventory"));
 
         // We can only create auction with one type of product once at a time
         // Also, we verify that if the auction is UPCOMING or ACTIVE
         boolean hasActiveOrUpcomingAuction = auctionRepository.existsByProduct_IdAndStatusIn(
                 product.getId(), List.of(AuctionStatus.UPCOMING, AuctionStatus.ACTIVE));
         if (hasActiveOrUpcomingAuction) {
-            throw new RuntimeException("Product is already listed in another active or upcoming auction");
+            throw new ListedProductException("Product is already listed in another active or upcoming auction");
         }
 
         // Validate the quantity
         if (request.getQuantity() > product.getQuantity()) {
-            throw new RuntimeException(
+            throw new InvalidProductQuantity(
                     "Requested quantity (" + request.getQuantity() + ") exceeds available stock (" + product.getQuantity() + ")"
             );
         }
@@ -72,18 +75,18 @@ public class AuctionService {
     public AuctionResponse cancelAuction(Long auctionId) {
         // To cancel the auction, first we need to check if that auction exist or not
         Auction auction = auctionRepository.findByIdWithDetails(auctionId)
-                .orElseThrow(() -> new RuntimeException("Auction not found"));
+                .orElseThrow(() -> new AuctionNotFoundException("Auction not found"));
 
         // After that, we need to verify if the current user is the one who hold the auction
         User currentSeller = getCurrentUser();
         if (!auction.getSeller().getId().equals(currentSeller.getId())) {
-            throw new RuntimeException("You are not the seller of this auction");
+            throw new AuthorizedException("You are not the seller of this auction");
         }
 
         // We can only cancel UPCOMING auction only
         // When it's ACTIVE, the money go on, and we shouldn't cancel that
         if (auction.getStatus() != AuctionStatus.UPCOMING) {
-            throw new RuntimeException("Only UPCOMING auctions can be cancelled");
+            throw new NotUpcommingAuctionException("Only UPCOMING auctions can be cancelled");
         }
 
         // Update the storage
@@ -108,7 +111,7 @@ public class AuctionService {
     public AuctionResponse getAuction(Long auctionId) {
         // First, we verify if the auction exist
         Auction auction = auctionRepository.findByIdWithDetails(auctionId)
-                .orElseThrow(() -> new RuntimeException("Auction not found"));
+                .orElseThrow(() -> new AuctionNotFoundException("Auction not found"));
 
         // We fetch from cache first for fast retrievement
         AuctionState state = auctionCacheAdapter.getAuctionState(auctionId);

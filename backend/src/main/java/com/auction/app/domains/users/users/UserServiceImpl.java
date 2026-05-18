@@ -24,53 +24,42 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse getCurrentUserInfo() {
-        User currentUser = getCurrentUser();
-
-        UserResponse userResponse = new UserResponse();
-        userResponse.setUsername(currentUser.getUsername());
-        userResponse.setEmail(currentUser.getEmail());
-        userResponse.setBalance(currentUser.getBalance());
-        return userResponse;
+        User user = currentUser();
+        return mapToResponse(user);
     }
 
     @Override
     @Transactional
     public void updateUsername(UsernameRequest usernameRequest) {
-        User currentUser = getCurrentUser();
-        userRepository.updateUsername(currentUser.getId(), usernameRequest.getUsername());
+        userRepository.updateUsername(currentUser().getId(), usernameRequest.getUsername());
     }
 
     @Override
     @Transactional
     public void updateEmail(EmailRequest emailRequest) {
-        User currentUser = getCurrentUser();
-
         String newEmail = emailRequest.getEmail();
-
-        if (newEmail.equals(currentUser.getEmail())) {
+        //Valid check
+        if (newEmail.equals(currentUser().getEmail())) {
             throw new RuntimeException("New email must be different from current email");
         }
         if (userRepository.existsByEmail(newEmail)) {
             throw new RuntimeException("Email is already in use");
         }
 
-        userRepository.updateEmail(currentUser.getId(), newEmail);
+        userRepository.updateEmail(currentUser().getId(), newEmail);
     }
 
     @Override
     @Transactional
     public void updatePassword(PasswordRequest passwordRequest) {
-        User currentUser = getCurrentUser();
-
-        if (!passwordEncoder.matches(passwordRequest.getCurrentPassword(), currentUser.getPassword())) {
+        if (!passwordEncoder.matches(passwordRequest.getCurrentPassword(), currentUser().getPassword())) {
             throw new RuntimeException("Current password is incorrect");
         }
-
         if (passwordRequest.getCurrentPassword().equals(passwordRequest.getNewPassword())) {
             throw new RuntimeException("New password must be different from current password");
         }
 
-        userRepository.updatePassword(currentUser.getId(), passwordEncoder.encode(passwordRequest.getNewPassword()));
+        userRepository.updatePassword(currentUser().getId(), passwordEncoder.encode(passwordRequest.getNewPassword()));
     }
 
     @Override
@@ -79,22 +68,14 @@ public class UserServiceImpl implements UserService {
         PageRequest pageRequest = PageRequest.of(page, size);
 
         // Fetch users from repo and map Entity to DTO (UserResponse)
-        return userRepository.findAll(pageRequest).map(user -> {
-            UserResponse response = new UserResponse();
-            response.setUsername(user.getUsername());
-            response.setEmail(user.getEmail());
-            response.setBalance(user.getBalance());
-            return response;
-        });
+        return userRepository.findAll(pageRequest).map(user -> mapToResponse(user));
     }
 
     @Override
     @Transactional
     public void disableUser(Long id) {
-        User currentUser = getCurrentUser();
-
         // Prevent admin from disabling their own account
-        if (currentUser.getId().equals(id)) {
+        if (currentUser().getId().equals(id)) {
             throw new RuntimeException("You cannot disable your own account");
         }
 
@@ -105,8 +86,19 @@ public class UserServiceImpl implements UserService {
         userRepository.save(userToDisable);
     }
 
-    private User getCurrentUser() {
+    //HELPERS
+    private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (User) authentication.getPrincipal();
+    }
+
+
+
+    private UserResponse mapToResponse(User user){
+        return UserResponse.builder()
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .balance(user.getBalance())
+                .build();
     }
 }
