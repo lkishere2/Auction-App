@@ -1,6 +1,10 @@
 package com.auction.app.domains.transaction;
 
+import com.auction.app.domains.auth.auth.exceptions.UserNotFoundException;
+import com.auction.app.domains.transaction.exceptions.AuthorizedException;
+import com.auction.app.domains.transaction.exceptions.PoorException;
 import com.auction.app.domains.transaction.exceptions.TransactionNotFoundException;
+import com.auction.app.domains.transaction.exceptions.TransactionNotPendingException;
 import com.auction.app.domains.users.users.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +46,10 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public void deleteTransaction(Long id) {
         Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
 
         if (!transaction.getUser().getId().equals(currentUser().getId())) {
-            throw new RuntimeException("Unauthorized: You do not make this transaction.");
+            throw new AuthorizedException("Unauthorized: You do not make this transaction.");
         }
 
         transactionRepository.delete(transaction);
@@ -65,10 +69,10 @@ public class TransactionServiceImpl implements TransactionService {
                 .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
 
         User user = userRepository.findById(clientRequest.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (transaction.getStatus() != TransactionStatus.PENDING) {
-            throw new RuntimeException("Only pending transactions can be accepted.");
+            throw new TransactionNotPendingException("Only pending transactions can be accepted.");
         }
 
         BigDecimal currentBalance = user.getBalance();
@@ -77,7 +81,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
         else {
             if (currentBalance.compareTo(clientRequest.getAmount()) < 0) {
-                throw new RuntimeException("Insufficient funds for withdrawal.");
+                throw new PoorException("Insufficient funds for withdrawal.");
             }
             user.setBalance(currentBalance.subtract(clientRequest.getAmount()));
         }
@@ -91,11 +95,11 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public void cancelTransaction(Long id) {
         Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
 
         // Only PENDING transactions should typically be cancellable
         if (transaction.getStatus() != TransactionStatus.PENDING) {
-            throw new RuntimeException("Only pending transactions can be cancelled.");
+            throw new TransactionNotPendingException("Only pending transactions can be cancelled.");
         }
 
         transaction.setStatus(TransactionStatus.FAILED);
