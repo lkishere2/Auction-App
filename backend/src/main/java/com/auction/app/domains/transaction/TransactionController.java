@@ -54,20 +54,9 @@ public class TransactionController {
 
     @PostMapping("/deposit")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deposit(
-            @RequestParam Long userId,
-            @RequestParam BigDecimal amount) {
-        transactionService.deposit(userId, amount);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/withdraw")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> withdraw(
-            @RequestParam Long userId,
-            @RequestParam BigDecimal amount) {
-        transactionService.withdraw(userId, amount);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Void> acceptTransaction(@RequestBody ClientRequest clientRequest) {
+        transactionService.acceptTransaction(clientRequest);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/cancel/{id}")
