@@ -31,6 +31,9 @@ public class Product {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
+    @Column(name = "product_image_url", length = 1024)
+    private String productImageUrl;
+
     @ElementCollection(targetClass = Tag.class)
     @CollectionTable(name = "product_tags", joinColumns = @JoinColumn(name = "product_id"))
     @Enumerated(EnumType.STRING)

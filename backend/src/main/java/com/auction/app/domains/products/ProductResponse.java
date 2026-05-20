@@ -15,7 +15,7 @@ public class ProductResponse {
     private String productName;
     private String description;
     private int quantity;
+    private String productImageUrl;
     private Set<Tag> tags;
     private LocalDateTime createdAt;
-
 }

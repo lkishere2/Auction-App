@@ -125,7 +125,7 @@ class ProductRepositoryTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Product> result = productRepository.findByKeywordAndTags(testOwner.getId(), "%laptop%", null, pageable);
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getProductName()).isEqualTo("Gaming Laptop");
+        assertThat(result.getContent().getFirst().getProductName()).isEqualTo("Gaming Laptop");
     }
 
     @Test
@@ -144,7 +144,7 @@ class ProductRepositoryTest {
         Set<Tag> searchTags = Set.of(Tag.ELECTRONICS);
         Page<Product> result = productRepository.findByKeywordAndTags(testOwner.getId(), "%iphone%", searchTags, pageable);
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getProductName()).isEqualTo("iPhone 15 Pro");
+        assertThat(result.getContent().getFirst().getProductName()).isEqualTo("iPhone 15 Pro");
     }
 
     @Test

@@ -41,10 +41,6 @@ public class AuctionCacheAdapter {
         return (PendingBid) redisTemplate.opsForList().leftPop(getQueueKey(auctionId));
     }
 
-    public PendingBid peekBid(Long auctionId) {
-        return (PendingBid) redisTemplate.opsForList().index(getQueueKey(auctionId), 0);
-    }
-
     public void clearAuctionCache(Long auctionId) {
         redisTemplate.delete(List.of(getResponseKey(auctionId), getQueueKey(auctionId)));
     }

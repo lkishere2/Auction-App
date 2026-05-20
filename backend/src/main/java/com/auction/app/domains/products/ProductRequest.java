@@ -1,23 +1,28 @@
 package com.auction.app.domains.products;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
+import org.hibernate.validator.constraints.URL;
 import lombok.Data;
 
 import java.util.Set;
 
 @Data
 public class ProductRequest {
-    @NotBlank
+
+    @NotBlank(message = "Product name cannot be empty")
+    @Pattern(regexp = "^(?:\\S+\\s*){1,50}$", message = "Product name must not exceed 50 words")
     private String productName;
 
-    @NotBlank
+    @Pattern(regexp = "^(?:\\S+\\s*){0,350}$", message = "Description must not exceed 350 words")
     private String description;
 
-    @Positive
-    private int quantity;
+    @NotNull(message = "Quantity is required")
+    @Positive(message = "Quantity must be a positive number")
+    private Integer quantity;
 
-    @NotEmpty
+    @Size(max = 1024, message = "Image URL is too long (max 1024 characters)")
+    @URL(message = "Must be a valid URL")
+    private String productImageUrl;
+
     private Set<Tag> tags;
 }

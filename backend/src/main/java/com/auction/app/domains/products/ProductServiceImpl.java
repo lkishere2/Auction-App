@@ -65,7 +65,8 @@ public class ProductServiceImpl implements ProductService {
         product.setProductName(productRequest.getProductName());
         product.setDescription(productRequest.getDescription());
         product.setQuantity(productRequest.getQuantity());
-        product.setTags(productRequest.getTags());
+        product.setProductImageUrl(productRequest.getProductImageUrl());
+        product.setTags(resolveTags(productRequest.getTags()));
     }
 
     private Product mapToEntity(ProductRequest productRequest, User currentUser) {
@@ -73,7 +74,8 @@ public class ProductServiceImpl implements ProductService {
                 .productName(productRequest.getProductName())
                 .description(productRequest.getDescription())
                 .quantity(productRequest.getQuantity())
-                .tags(productRequest.getTags())
+                .productImageUrl(productRequest.getProductImageUrl())
+                .tags(resolveTags(productRequest.getTags()))
                 .owner(currentUser)
                 .build();
     }
@@ -84,9 +86,17 @@ public class ProductServiceImpl implements ProductService {
                 .productName(product.getProductName())
                 .description(product.getDescription())
                 .quantity(product.getQuantity())
+                .productImageUrl(product.getProductImageUrl())
                 .tags(product.getTags())
                 .createdAt(product.getCreatedAt())
                 .build();
+    }
+
+    private Set<Tag> resolveTags(Set<Tag> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return Set.of(Tag.OTHER);
+        }
+        return tags;
     }
 
     private User currentUser() {

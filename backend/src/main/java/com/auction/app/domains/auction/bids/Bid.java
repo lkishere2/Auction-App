@@ -35,8 +35,10 @@ public class Bid {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private BidStatus status = BidStatus.PENDING;
 
     @Column(nullable = false)
+    @Builder.Default
     private Instant placedAt = Instant.now();
 }

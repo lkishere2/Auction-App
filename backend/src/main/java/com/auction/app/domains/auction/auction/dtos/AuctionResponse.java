@@ -23,6 +23,8 @@ public class AuctionResponse implements Serializable {
     private Long productId;
     private String productName;
     private Set<Tag> productTags;
+    private String productDescription;
+    private String productImageUrl;
     private Integer auctionedQuantity;
     private BigDecimal startingPrice;
     private BigDecimal currentPrice;
@@ -41,6 +43,8 @@ public class AuctionResponse implements Serializable {
                 .productId(auction.getProduct().getId())
                 .productName(auction.getProduct().getProductName())
                 .productTags(auction.getProduct().getTags())
+                .productDescription(auction.getProduct().getDescription())
+                .productImageUrl(auction.getProduct().getProductImageUrl())
                 .auctionedQuantity(auction.getAuctionedQuantity())
                 .startingPrice(auction.getStartingPrice())
                 .currentPrice(auction.getCurrentPrice())
