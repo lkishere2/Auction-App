@@ -1,7 +1,6 @@
 import { Gavel } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NavItem from './NavItem';
-import SearchBar from './SearchBar';
 import LoginButton from './LoginButton';
 import ProfileButton from './ProfileButton';
 
@@ -30,7 +29,7 @@ export default function Header({ isLoggedIn, user, onLogout }: HeaderProps) {
                 top: 0,
                 zIndex: 100,
                 width: '100%',
-                height: '60px',
+                height: '72px',
                 background: '#FFFFFF',
                 borderBottom: '1px solid #0D0D0D',
             }}
@@ -40,19 +39,19 @@ export default function Header({ isLoggedIn, user, onLogout }: HeaderProps) {
                     maxWidth: '1280px',
                     height: '100%',
                     margin: '0 auto',
-                    padding: '0 24px',
+                    padding: '0 32px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '24px',
+                    gap: '32px',
                 }}
             >
                 <button
                     onClick={() => navigate('/')}
-                    aria-label="BidMarket home"
+                    aria-label="BidVault home"
                     style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px',
+                        gap: '12px',
                         background: 'none',
                         border: 'none',
                         cursor: 'pointer',
@@ -62,32 +61,30 @@ export default function Header({ isLoggedIn, user, onLogout }: HeaderProps) {
                 >
                     <div
                         style={{
-                            width: '32px',
-                            height: '32px',
+                            width: '40px',
+                            height: '40px',
                             background: '#0D0D0D',
-                            borderRadius: '8px',
+                            borderRadius: '10px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0,
                         }}
                     >
-                        <Gavel size={16} color="#F5C518" strokeWidth={2} aria-hidden />
+                        <Gavel size={20} color="#F5C518" strokeWidth={2} aria-hidden />
                     </div>
                     <span
                         style={{
-                            fontSize: '17px',
+                            fontSize: '22px',
                             fontWeight: 700,
                             color: '#0D0D0D',
                             letterSpacing: '-0.03em',
                             lineHeight: 1,
                         }}
                     >
-                        BidMarket
+                        BidVault
                     </span>
                 </button>
-
-                <SearchBar />
 
                 <div style={{ flex: 1 }} />
 
@@ -95,7 +92,7 @@ export default function Header({ isLoggedIn, user, onLogout }: HeaderProps) {
                     style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px'
+                        gap: '16px'
                     }}
                     aria-label="Main navigation"
                 >
@@ -104,7 +101,7 @@ export default function Header({ isLoggedIn, user, onLogout }: HeaderProps) {
                     ))}
                 </nav>
 
-                <div style={{ marginLeft: '12px' }}>
+                <div style={{ marginLeft: '16px' }}>
                     {isLoggedIn && user ? (
                         <ProfileButton
                             username={user.username}

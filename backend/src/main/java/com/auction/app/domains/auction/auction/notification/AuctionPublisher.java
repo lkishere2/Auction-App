@@ -2,8 +2,10 @@ package com.auction.app.domains.auction.auction.notification;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 import com.auction.app.domains.auction.auction.Auction;
+import com.auction.app.domains.auction.bids.dtos.BidResponse;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -19,12 +21,18 @@ public class AuctionPublisher {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String NOTIFY_PREFIX = "auction:notify:";
+    private static final String BIDS_SUFFIX = ":bids";
 
     public void publish(BidNotificationPayload payload) {
         String channel = NOTIFY_PREFIX + payload.getAuctionId();
         redisTemplate.convertAndSend(channel, payload);
-        log.info("Published bid notification to channel {} — price ${}",
-                channel, payload.getCurrentPrice());
+        log.info("Published bid notification to channel {} — price ${}", channel, payload.getCurrentPrice());
+    }
+
+    public void publishHistory(Long auctionId, List<BidResponse> history) {
+        String channel = NOTIFY_PREFIX + auctionId +  BIDS_SUFFIX;
+        redisTemplate.convertAndSend(channel, history);
+        log.info("Published bid history to channel {} - {} bids",  auctionId, history.size());
     }
 
     public void publishAuctionStarted(Auction auction) {
@@ -68,13 +76,13 @@ public class AuctionPublisher {
                 auction.getId(), auction.getEndTime());
     }
 
-    public void publishAuctionEnded(Long auctionId, String winnerLabel, BigDecimal finalPrice, Integer bidCount) {
+    public void publishAuctionEnded(Long auctionId, String winnerLabel, BigDecimal finalPrice, Integer bidCount, Instant endTime) {
         BidNotificationPayload payload = BidNotificationPayload.builder()
                 .auctionId(auctionId)
                 .currentPrice(finalPrice)
                 .minNextBid(BigDecimal.ZERO)
                 .bidderLabel(winnerLabel != null ? winnerLabel : "No winner")
-                .endTime(Instant.now())
+                .endTime(endTime)
                 .extended(false)
                 .bidCount(bidCount)
                 .ended(true)

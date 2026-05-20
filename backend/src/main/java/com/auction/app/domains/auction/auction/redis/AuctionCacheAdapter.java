@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-import com.auction.app.domains.auction.auction.dtos.AuctionState;
+import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,20 +17,20 @@ import lombok.RequiredArgsConstructor;
 public class AuctionCacheAdapter {
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private static final String STATE_PREFIX = "auction:state:";
+    private static final String RESPONSE_PREFIX = "auction:response:";
     private static final String QUEUE_PREFIX = "auction:queue:";
     private static final Duration POST_AUCTION_RETENTION = Duration.ofDays(1);
 
-    public void cacheAuctionState(Long auctionId, AuctionState state) {
-        redisTemplate.opsForValue().set(getStateKey(auctionId), state, calculateTtl(state));
+    public void cacheAuctionResponse(Long auctionId, AuctionResponse response) {
+        redisTemplate.opsForValue().set(getResponseKey(auctionId), response, calculateTtl(response));
     }
 
-    public AuctionState getAuctionState(Long auctionId) {
-        return (AuctionState) redisTemplate.opsForValue().get(getStateKey(auctionId));
+    public AuctionResponse getAuctionResponse(Long auctionId) {
+        return (AuctionResponse) redisTemplate.opsForValue().get(getResponseKey(auctionId));
     }
 
-    public void updateAuctionState(Long auctionId, AuctionState state) {
-        cacheAuctionState(auctionId, state);
+    public void updateAuctionResponse(Long auctionId, AuctionResponse response) {
+        cacheAuctionResponse(auctionId, response);
     }
 
     public void enqueueBid(Long auctionId, PendingBid bid) {
@@ -46,22 +46,22 @@ public class AuctionCacheAdapter {
     }
 
     public void clearAuctionCache(Long auctionId) {
-        redisTemplate.delete(List.of(getStateKey(auctionId), getQueueKey(auctionId)));
+        redisTemplate.delete(List.of(getResponseKey(auctionId), getQueueKey(auctionId)));
     }
 
-    private String getStateKey(Long auctionId) {
-        return STATE_PREFIX + auctionId;
+    private String getResponseKey(Long auctionId) {
+        return RESPONSE_PREFIX + auctionId;
     }
 
     private String getQueueKey(Long auctionId) {
         return QUEUE_PREFIX + auctionId;
     }
 
-    private Duration calculateTtl(AuctionState state) {
+    private Duration calculateTtl(AuctionResponse response) {
         Instant now = Instant.now();
-        if (state.getEndTime().isBefore(now)) {
+        if (response.getEndTime().isBefore(now)) {
             return POST_AUCTION_RETENTION;
         }
-        return Duration.between(now, state.getEndTime()).plus(POST_AUCTION_RETENTION);
+        return Duration.between(now, response.getEndTime()).plus(POST_AUCTION_RETENTION);
     }
 }

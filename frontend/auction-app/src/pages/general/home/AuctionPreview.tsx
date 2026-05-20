@@ -1,4 +1,3 @@
-// src/pages/home/AuctionPreview.tsx
 import CardDeck from './CardDesk';
 import type { AuctionItem } from './AuctionCard';
 
@@ -87,10 +86,8 @@ const MOCK_LIVE_AUCTIONS: AuctionItem[] = [
 
 export default function AuctionPreview() {
     return (
-        <section className="bg-white py-20 relative z-10 border-t border-neutral-100">
+        <section className="relative z-10 pt-32 pb-20 bg-gradient-to-b from-transparent via-white to-white">
             <div className="max-w-7xl mx-auto px-4">
-
-                {/* Header Labels */}
                 <div className="text-center mb-12">
                     <p className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#F5C518] mb-2">
                         Discover items
@@ -101,9 +98,7 @@ export default function AuctionPreview() {
                     <div className="w-12 h-[2px] bg-[#F5C518] mx-auto mt-4" />
                 </div>
 
-                {/* Interactive Deck Component */}
                 <CardDeck items={MOCK_LIVE_AUCTIONS} />
-
             </div>
         </section>
     );

@@ -9,6 +9,7 @@ import com.auction.app.domains.users.users.User;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter
@@ -51,6 +52,7 @@ public class Auction {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private AuctionStatus status = AuctionStatus.UPCOMING;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -58,9 +60,11 @@ public class Auction {
     private User winner;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer bidCount = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean extended = false;
 
     public void recalculateMinBidIncrement() {

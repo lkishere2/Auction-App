@@ -13,7 +13,6 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
     const ref = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
-    // Close on outside click
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
             if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -31,9 +30,9 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
                 style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    height: '36px',
-                    padding: '0 12px 0 6px',
+                    gap: '10px',
+                    height: '44px',
+                    padding: '0 16px 0 8px',
                     background: '#FFFFFF',
                     border: '1px solid #0D0D0D',
                     borderRadius: '999px',
@@ -44,17 +43,16 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#F9F9F9')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#FFFFFF')}
             >
-                {/* Gold avatar */}
                 <div
                     style={{
-                        width: '26px',
-                        height: '26px',
+                        width: '32px',
+                        height: '32px',
                         borderRadius: '50%',
                         background: '#F5C518',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '10px',
+                        fontSize: '12px',
                         fontWeight: 700,
                         color: '#0D0D0D',
                         letterSpacing: '0.02em',
@@ -66,10 +64,10 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
 
                 <span
                     style={{
-                        fontSize: '13px',
+                        fontSize: '15px',
                         fontWeight: 500,
                         color: '#0D0D0D',
-                        maxWidth: '96px',
+                        maxWidth: '120px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -79,7 +77,7 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
                 </span>
 
                 <ChevronDown
-                    size={13}
+                    size={16}
                     color="#0D0D0D"
                     strokeWidth={2}
                     style={{
@@ -90,14 +88,13 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
                 />
             </button>
 
-            {/* Dropdown */}
             {open && (
                 <div
                     style={{
                         position: 'absolute',
                         top: 'calc(100% + 8px)',
                         right: 0,
-                        minWidth: '160px',
+                        minWidth: '180px',
                         background: '#FFFFFF',
                         border: '1px solid #0D0D0D',
                         borderRadius: '12px',
@@ -111,7 +108,7 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
                         onMouseEnter={(e) => (e.currentTarget.style.background = '#F5C51820')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                        <User size={14} strokeWidth={2} aria-hidden />
+                        <User size={16} strokeWidth={2} aria-hidden />
                         My Profile
                     </button>
 
@@ -123,7 +120,7 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
                         onMouseEnter={(e) => (e.currentTarget.style.background = '#FFF0F0')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                        <LogOut size={14} strokeWidth={2} aria-hidden />
+                        <LogOut size={16} strokeWidth={2} aria-hidden />
                         Log out
                     </button>
                 </div>
@@ -135,12 +132,12 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
 const dropdownItemStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '12px',
     width: '100%',
-    padding: '10px 16px',
+    padding: '12px 20px',
     background: 'transparent',
     border: 'none',
-    fontSize: '13px',
+    fontSize: '15px',
     fontWeight: 500,
     color: '#0D0D0D',
     cursor: 'pointer',

@@ -1,23 +1,23 @@
 package com.auction.app.domains.auction.bids;
 
+import java.security.Principal;
 import java.util.List;
 
 import com.auction.app.domains.auction.bids.dtos.BidRequest;
 import com.auction.app.domains.auction.bids.dtos.BidResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
 import com.auction.app.domains.auction.auction.AuctionService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auctions")
@@ -28,10 +28,9 @@ public class BidController {
     private final BidService bidService;
     private final AuctionService auctionService;
 
-    @PostMapping("/{auctionId}/bid")
-    public ResponseEntity<Void> placeBid(@PathVariable Long auctionId, @RequestBody @Valid BidRequest request) {
-        bidService.placeBid(auctionId, request);
-        return ResponseEntity.accepted().build();
+    @MessageMapping("/auction/{auctionId}/bid")
+    public void placeBid(@DestinationVariable Long auctionId, @Valid @Payload BidRequest request, Principal principal) {
+        bidService.placeBid(auctionId, request, principal);
     }
 
     @GetMapping("/{auctionId}/bids")
@@ -42,9 +41,6 @@ public class BidController {
     @GetMapping("/bids/me")
     public ResponseEntity<List<AuctionResponse>> getAuctionsBidOn() {
         List<Long> auctionIds = bidService.getAuctionsBiddenByCurrentUser();
-        List<AuctionResponse> auctions = auctionIds.stream()
-                .map(auctionService::getAuction)
-                .toList();
-        return ResponseEntity.ok(auctions);
+        return ResponseEntity.ok(auctionService.getAuctionsBidOnByCurrentUser(auctionIds));
     }
 }

@@ -1,211 +1,180 @@
 import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
-interface Node3D {
-    x: number;
-    y: number;
-    z: number;
-}
-
-const NODE_COUNT = 80;
-const EDGE_DIST = 105;
-const RADIUS = 260;
-const DAMPING = 0.92;
-
-function latLonToXYZ(lat: number, lon: number, r: number): Node3D {
-    const phi = (90 - lat) * (Math.PI / 180);
-    const theta = lon * (Math.PI / 180);
-    return {
-        x: r * Math.sin(phi) * Math.cos(theta),
-        y: r * Math.cos(phi),
-        z: r * Math.sin(phi) * Math.sin(theta),
-    };
-}
-
-function dist3(a: Node3D, b: Node3D): number {
-    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2);
-}
-
-// Rotate around Y axis (horizontal drag)
-function rotateY(p: Node3D, a: number): Node3D {
-    const cos = Math.cos(a), sin = Math.sin(a);
-    return {
-        x: p.x * cos - p.z * sin,
-        y: p.y,
-        z: p.x * sin + p.z * cos,
-    };
-}
-
-// Rotate around X axis (vertical drag)
-function rotateX(p: Node3D, a: number): Node3D {
-    const cos = Math.cos(a), sin = Math.sin(a);
-    return {
-        x: p.x,
-        y: p.y * cos - p.z * sin,
-        z: p.y * sin + p.z * cos,
-    };
-}
+const continentData = [
+    { lat: [-35, 37], lon: [-17, 51] },
+    { lat: [36, 70], lon: [-10, 145] },
+    { lat: [1, 70], lon: [60, 150] },
+    { lat: [-55, 12], lon: [-82, -35] },
+    { lat: [12, 72], lon: [-168, -55] },
+    { lat: [-40, -10], lon: [112, 154] },
+];
 
 export default function Globe() {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const mountRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        const mount = mountRef.current;
+        if (!mount) return;
 
-        const W = canvas.width;
-        const H = canvas.height;
-        const cx = W / 2;
-        const cy = H / 2;
+        let animId: number;
+        const width = 1000;
+        const height = 1000;
 
-        // Generate nodes
-        const rawNodes: Node3D[] = [];
-        for (let i = 0; i < NODE_COUNT; i++) {
-            const lat = Math.random() * 160 - 80;
-            const lon = Math.random() * 360 - 180;
-            rawNodes.push(latLonToXYZ(lat, lon, RADIUS));
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setClearColor(0x000000, 0);
+        renderer.setSize(width, height);
+        mount.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+        camera.position.z = 6.5;
+
+        const globeGroup = new THREE.Group();
+        globeGroup.position.y = -0.8;
+        scene.add(globeGroup);
+
+        const GLOBE_RADIUS = 2.6;
+        const DOT_RADIUS = 0.022;
+        const RING_COUNT = 65;
+        const SPACING = 0.125;
+
+        const dotPositions: THREE.Vector3[] = [];
+        const dotQuaternions: THREE.Quaternion[] = [];
+
+        for (let i = 0; i <= RING_COUNT; i++) {
+            const phi = (i / RING_COUNT) * Math.PI;
+            const ringRadius = Math.sin(phi) * GLOBE_RADIUS;
+            const y = Math.cos(phi) * GLOBE_RADIUS;
+
+            const ringCircumference = 2 * Math.PI * ringRadius;
+            const dotsInRing = Math.max(1, Math.floor(ringCircumference / SPACING));
+
+            for (let j = 0; j < dotsInRing; j++) {
+                const theta = (j / dotsInRing) * Math.PI * 2;
+
+                const lat = 90 - (phi * 180) / Math.PI;
+                const lon = (theta * 180) / Math.PI - 180;
+
+                let onLand = false;
+                for (const continent of continentData) {
+                    if (lat >= continent.lat[0] && lat <= continent.lat[1] &&
+                        lon >= continent.lon[0] && lon <= continent.lon[1]) {
+                        onLand = true;
+                        break;
+                    }
+                }
+
+                if (onLand) {
+                    const x = ringRadius * Math.cos(theta);
+                    const z = ringRadius * Math.sin(theta);
+                    const pos = new THREE.Vector3(x, y, z);
+                    dotPositions.push(pos);
+
+                    const dummy = new THREE.Object3D();
+                    dummy.position.copy(pos);
+                    dummy.lookAt(pos.clone().multiplyScalar(2));
+                    dotQuaternions.push(dummy.quaternion.clone());
+                }
+            }
         }
 
-        // Rotation state
-        let angleY = 0;
-        let angleX = 0.2;
-        let velY = 0.003;
-        let velX = 0;
+        const circleGeo = new THREE.CircleGeometry(DOT_RADIUS, 16);
+        const circleMat = new THREE.MeshBasicMaterial({
+            color: 0xF5C518,
+            side: THREE.FrontSide,
+            transparent: true,
+            opacity: 0.95
+        });
 
-        // Mouse drag state
+        const instancedMesh = new THREE.InstancedMesh(circleGeo, circleMat, dotPositions.length);
+        const dummyObj = new THREE.Object3D();
+
+        for (let i = 0; i < dotPositions.length; i++) {
+            dummyObj.position.copy(dotPositions[i]);
+            dummyObj.quaternion.copy(dotQuaternions[i]);
+            dummyObj.updateMatrix();
+            instancedMesh.setMatrixAt(i, dummyObj.matrix);
+        }
+
+        globeGroup.add(instancedMesh);
+
         let isDragging = false;
-        let lastX = 0;
-        let lastY = 0;
+        let prevMouseX = 0;
+        let prevMouseY = 0;
+        let rotationVelX = 0;
+        let rotationVelY = 0.002;
+
+        const applyRotation = (velX: number, velY: number) => {
+            const qx = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), velX);
+            const qy = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), velY);
+            globeGroup.quaternion.premultiply(qy).premultiply(qx);
+        };
 
         const onMouseDown = (e: MouseEvent) => {
             isDragging = true;
-            lastX = e.clientX;
-            lastY = e.clientY;
-            velY = 0;
-            velX = 0;
+            prevMouseX = e.clientX;
+            prevMouseY = e.clientY;
+            mount.style.cursor = 'grabbing';
+            rotationVelY = 0;
         };
-
         const onMouseMove = (e: MouseEvent) => {
             if (!isDragging) return;
-            const dx = e.clientX - lastX;
-            const dy = e.clientY - lastY;
-            velY = dx * 0.003;
-            velX = dy * 0.003;
-            angleY += velY;
-            angleX += velX;
-            // Clamp vertical rotation so it doesn't flip
-            angleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, angleX));
-            lastX = e.clientX;
-            lastY = e.clientY;
+            const dx = e.clientX - prevMouseX;
+            const dy = e.clientY - prevMouseY;
+            rotationVelX = dy * 0.002;
+            rotationVelY = dx * 0.002;
+            applyRotation(rotationVelX, rotationVelY);
+            prevMouseX = e.clientX;
+            prevMouseY = e.clientY;
+        };
+        const onMouseUp = () => {
+            isDragging = false;
+            mount.style.cursor = 'grab';
         };
 
-        const onMouseUp = () => { isDragging = false; };
-
-        // Touch support
-        const onTouchStart = (e: TouchEvent) => {
-            isDragging = true;
-            lastX = e.touches[0].clientX;
-            lastY = e.touches[0].clientY;
-            velY = 0;
-            velX = 0;
-        };
-
-        const onTouchMove = (e: TouchEvent) => {
-            if (!isDragging) return;
-            const dx = e.touches[0].clientX - lastX;
-            const dy = e.touches[0].clientY - lastY;
-            velY = dx * 0.003;
-            velX = dy * 0.003;
-            angleY += velY;
-            angleX += velX;
-            angleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, angleX));
-            lastX = e.touches[0].clientX;
-            lastY = e.touches[0].clientY;
-        };
-
-        canvas.addEventListener('mousedown', onMouseDown);
+        mount.addEventListener('mousedown', onMouseDown);
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
-        canvas.addEventListener('touchstart', onTouchStart, { passive: true });
-        window.addEventListener('touchmove', onTouchMove, { passive: true });
-        window.addEventListener('touchend', onMouseUp);
 
-        let rafId: number;
-
-        const draw = () => {
-            ctx.clearRect(0, 0, W, H);
+        const animate = () => {
+            animId = requestAnimationFrame(animate);
 
             if (!isDragging) {
-                // Auto-spin + dampen thrown velocity
-                velY = velY * DAMPING + 0.003 * (1 - DAMPING);
-                velX *= DAMPING;
-                angleY += velY;
-                angleX += velX;
-                angleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, angleX));
+                rotationVelY = 0.001;
+                applyRotation(0, rotationVelY);
             }
 
-            // Project all nodes
-            const projected = rawNodes.map((n) => {
-                const p1 = rotateX(n, angleX);
-                const p2 = rotateY(p1, angleY);
-                return { sx: cx + p2.x, sy: cy - p2.y, z: p2.z, raw: p2 };
-            });
-
-            // Draw edges
-            for (let i = 0; i < rawNodes.length; i++) {
-                for (let j = i + 1; j < rawNodes.length; j++) {
-                    if (dist3(rawNodes[i], rawNodes[j]) > EDGE_DIST) continue;
-                    const pi = projected[i];
-                    const pj = projected[j];
-                    if (pi.z < -40 && pj.z < -40) continue;
-                    const depth = (pi.z + pj.z) / (2 * RADIUS);
-                    const alpha = Math.min(Math.max(depth * 0.85 + 0.3, 0.06), 0.88);
-                    ctx.beginPath();
-                    ctx.moveTo(pi.sx, pi.sy);
-                    ctx.lineTo(pj.sx, pj.sy);
-                    ctx.strokeStyle = `rgba(245, 197, 24, ${alpha})`;
-                    ctx.lineWidth = 0.9;
-                    ctx.stroke();
-                }
-            }
-
-            // Draw nodes
-            for (let i = 0; i < projected.length; i++) {
-                const p = projected[i];
-                if (p.z < -40) continue;
-                const depth = p.z / RADIUS;
-                const alpha = Math.min(Math.max(depth * 0.75 + 0.4, 0.12), 1);
-                const r = depth > 0 ? 2.8 : 1.6;
-                ctx.beginPath();
-                ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(13, 13, 13, ${alpha})`;
-                ctx.fill();
-            }
-
-            rafId = requestAnimationFrame(draw);
+            renderer.render(scene, camera);
         };
 
-        draw();
+        animate();
 
         return () => {
-            cancelAnimationFrame(rafId);
-            canvas.removeEventListener('mousedown', onMouseDown);
+            cancelAnimationFrame(animId);
+            mount.removeEventListener('mousedown', onMouseDown);
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
-            canvas.removeEventListener('touchstart', onTouchStart);
-            window.removeEventListener('touchmove', onTouchMove);
-            window.removeEventListener('touchend', onMouseUp);
+            if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+
+            circleGeo.dispose();
+            circleMat.dispose();
+            instancedMesh.dispose();
+
+            renderer.dispose();
         };
     }, []);
 
     return (
-        <canvas
-            ref={canvasRef}
-            width={600}
-            height={600}
-            style={{ cursor: 'grab', display: 'block' }}
-            aria-label="Interactive network globe — drag to rotate"
+        <div
+            ref={mountRef}
+            style={{
+                width: '1000px',
+                height: '1000px',
+                cursor: 'grab',
+                margin: '0 auto',
+            }}
         />
     );
 }

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import VerificationBox from './VerificationBox';
+import ForgotPasswordVerifyBox from './ForgotPasswordVerifyBox';
 import ErrorBox from '../../components/ErrorBox';
 
-export default function VerifyPage() {
+export default function ForgotPasswordVerifyPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const [error, setError] = useState<{ title: string; message: string } | null>(null);
@@ -11,7 +11,7 @@ export default function VerifyPage() {
 
     useEffect(() => {
         if (!email) {
-            navigate('/login');
+            navigate('/forget-password');
         }
     }, [email, navigate]);
 
@@ -19,7 +19,7 @@ export default function VerifyPage() {
 
     return (
         <main className="w-screen h-screen min-h-screen flex items-center justify-center bg-gray-50 overflow-hidden select-none relative">
-            <VerificationBox email={email} onError={(title, message) => setError({ title, message })} />
+            <ForgotPasswordVerifyBox email={email} onError={(title, message) => setError({ title, message })} />
 
             {error && (
                 <ErrorBox
