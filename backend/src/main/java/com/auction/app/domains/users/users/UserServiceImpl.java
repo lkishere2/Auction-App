@@ -68,7 +68,7 @@ public class UserServiceImpl implements UserService {
         PageRequest pageRequest = PageRequest.of(page, size);
 
         // Fetch users from repo and map Entity to DTO (UserResponse)
-        return userRepository.findAll(pageRequest).map(user -> mapToResponse(user));
+        return userRepository.findAll(pageRequest).map(this :: mapToResponse);
     }
 
     @Override

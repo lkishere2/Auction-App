@@ -17,5 +17,5 @@ public class ProductResponse {
     private int quantity;
     private Set<Tag> tags;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+
 }
