@@ -7,7 +7,6 @@ import com.auction.app.domains.auction.auction.*;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
 import com.auction.app.domains.auction.auction.notification.AuctionPublisher;
 import com.auction.app.domains.auction.auction.redis.AuctionCacheAdapter;
-import com.auction.app.domains.auction.bids.dtos.PendingBid;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -39,9 +38,7 @@ public class AuctionHandler {
     private final AuctionService auctionService;
     private final AuctionPublisher publisher;
 
-    private static final long QUEUE_DRAIN_EXTENSION_SECONDS = 300L; // 5 minutes
-
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 10000)
     public void activateUpcomingAuctions() {
 
         List<Auction> toActivate = auctionRepository.findUpcomingToActivate(AuctionStatus.UPCOMING, Instant.now());
@@ -61,7 +58,7 @@ public class AuctionHandler {
     }
 
     // Same logic as the active
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 10000)
     public void endActiveAuctions() {
 
         List<Auction> toEnd = auctionRepository.findActiveToEnd(AuctionStatus.ACTIVE, Instant.now());
@@ -106,13 +103,7 @@ public class AuctionHandler {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processEndedAuction(Auction auction) {
-        // Check the queue if there are any pending bids
-        // If true then extends the end time
-        if (handlePendingQueue(auction)) {
-            return;
-        }
-
-        // Since the queue is empty or has already extended - finalize the final result
+        // Sync final result
         AuctionResponse response = auctionCacheAdapter.getAuctionResponse(auction.getId());
         if (response != null) {
             auction.setCurrentPrice(response.getCurrentPrice());
@@ -151,40 +142,6 @@ public class AuctionHandler {
     }
 
     // Helpers
-    private boolean handlePendingQueue(Auction auction) {
-        PendingBid peeked = auctionCacheAdapter.peekBid(auction.getId());
-
-        if (peeked != null) {
-            if (auction.isExtended()) {
-                log.warn("Auction #{} has pending bids but grace period is over. Forcing close.", auction.getId());
-                return false;
-            }
-            else {
-                AuctionResponse response = auctionCacheAdapter.getAuctionResponse(auction.getId());
-
-                if (response != null) {
-                    Instant newEndTime = auction.getEndTime().plusSeconds(QUEUE_DRAIN_EXTENSION_SECONDS);
-
-                    // Update the cache
-                    response.setEndTime(newEndTime);
-                    response.setExtended(true);
-                    auctionCacheAdapter.updateAuctionResponse(auction.getId(), response);
-
-                    // Update the DB Entity
-                    auction.setEndTime(newEndTime);
-                    auction.setExtended(true);
-
-                    // Publish extension for user and save
-                    publisher.publishAuctionExtended(auction);
-                    log.info("Auction #{} extended to {}", auction.getId(), newEndTime);
-
-                    auctionRepository.save(auction);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
     private void handleNoBids(Auction auction) {
         // Restore quantity back to the seller's product

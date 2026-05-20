@@ -56,25 +56,6 @@ public class AuctionPublisher {
                 auction.getId(), auction.getCurrentPrice());
     }
 
-    public void publishAuctionExtended(Auction auction) {
-        // The next valid bid must be at least the current price + the required increment
-        BigDecimal minNextBid = auction.getCurrentPrice().add(auction.getMinBidIncrement());
-
-        BidNotificationPayload payload = BidNotificationPayload.builder()
-                .auctionId(auction.getId())
-                .currentPrice(auction.getCurrentPrice())
-                .minNextBid(minNextBid)
-                .bidderLabel(null)             // No new bid, just a time extension
-                .endTime(auction.getEndTime()) // This is the new extended time
-                .extended(true)                // Tells frontend to show "Extended!"
-                .bidCount(auction.getBidCount())
-                .ended(false)                  // Still going
-                .build();
-
-        redisTemplate.convertAndSend(NOTIFY_PREFIX + auction.getId(), payload);
-        log.info("Auction #{} EXTENDED notification published with new end time: {}",
-                auction.getId(), auction.getEndTime());
-    }
 
     public void publishAuctionEnded(Long auctionId, String winnerLabel, BigDecimal finalPrice, Integer bidCount, Instant endTime) {
         BidNotificationPayload payload = BidNotificationPayload.builder()
