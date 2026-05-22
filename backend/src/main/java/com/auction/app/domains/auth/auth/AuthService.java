@@ -14,7 +14,7 @@ public interface AuthService {
     void logout(HttpServletRequest request);
     void verifyUser(VerifyRequest verifyRequest);
     void resendVerificationCode(String email);
-    void sendVerificationEmail(User user);
+    void sendVerificationEmail(String email, String code);
     void requestPasswordReset(String email);
     void verifyPasswordReset(VerifyRequest verifyRequest);
     void resetPassword(String email, String password);

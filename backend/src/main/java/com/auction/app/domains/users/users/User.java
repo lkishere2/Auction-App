@@ -10,10 +10,8 @@ import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-
 import java.math.BigDecimal;
 
 @Getter
@@ -39,25 +37,41 @@ public class User implements UserDetails {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private Provider provider;
+    @Builder.Default
+    private Provider provider = Provider.LOCAL;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private Role role = Role.USER;
 
-    @Column(name = "verification_code")
-    private String verificationCode;
-
-    @Column(name = "verification_expiration")
-    private LocalDateTime verificationExpiration;
-
     private boolean enabled;
 
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    private boolean requestPasswordReset = false;
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Product> myStorage;
 
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    private boolean passwordResetVerified = false;
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Feedback> myFeedback;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Transaction> transactions;
+
+    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
+    private List<Auction> myAuction;
+
+    @OneToMany(mappedBy = "winner", cascade = CascadeType.ALL)
+    private List<Auction> myReward;
+
+    // People who are following this user
+    @OneToMany(mappedBy = "following", cascade = CascadeType.ALL)
+    private List<Connection> followers;
+
+    // People who this user is currently following
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL)
+    private List<Connection> following;
+
+    @Column(name = "balance", nullable = false, precision = 19, scale = 2, columnDefinition = "numeric(19,2) default 0.00")
+    @Builder.Default
+    private BigDecimal balance = BigDecimal.ZERO;
 
     public String getDisplayName() {
         return this.username;
@@ -90,33 +104,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return this.enabled;
     }
-
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Product> myStorage;
-
-    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Feedback> myFeedback;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Transaction> transactions;
-
-    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
-    private List<Auction> myAuction;
-
-    @OneToMany(mappedBy = "winner", cascade = CascadeType.ALL)
-    private List<Auction> myReward;
-
-    // People who are following this user
-    @OneToMany(mappedBy = "following", cascade = CascadeType.ALL)
-    private List<Connection> followers;
-
-    // People who this user is currently following
-    @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL)
-    private List<Connection> following;
-
-    @Column(name = "balance", nullable = false, precision = 19, scale = 2, columnDefinition = "numeric(19,2) default 0.00")
-    @Builder.Default
-    private BigDecimal balance = BigDecimal.ZERO;
 }

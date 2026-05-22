@@ -34,3 +34,6 @@
 5) RefreshToken role
 
 6) The logout
+
+
+OUTDATED VERSION (I'll update later, so lazy!)
