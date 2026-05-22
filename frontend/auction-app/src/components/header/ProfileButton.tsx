@@ -115,7 +115,12 @@ export default function ProfileButton({ username, initials, onLogout }: ProfileB
                     <div style={{ height: '0.5px', background: '#0D0D0D20', margin: '0 12px' }} />
 
                     <button
-                        onClick={() => { onLogout?.(); setOpen(false); }}
+                        onClick={() => { 
+                            onLogout?.(); 
+                            setOpen(false);
+                            navigate('/');
+                            window.location.reload();
+                        }}
                         style={{ ...dropdownItemStyle, color: '#CC0000' }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = '#FFF0F0')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}

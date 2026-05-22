@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.app.ui.controller.InventoryController">
+    <top>
+        <HBox spacing="12" alignment="CENTER_LEFT" styleClass="header" BorderPane.alignment="CENTER">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Button fx:id="backButton" text="&lt;-" onAction="#onBack" />
+                <Label text="BV" styleClass="brand-icon" />
+                <Label text="BidVault" styleClass="brand" />
+            </HBox>
+            <Region HBox.hgrow="ALWAYS" />
+            <Label text="Inventory" styleClass="section-title" />
+            <Button fx:id="createButton" text="Create Product" />
+        </HBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+            <VBox spacing="24" alignment="TOP_CENTER" styleClass="content-pane">
+                <VBox.margin>
+                    <Insets top="24" left="32" bottom="32" right="32" />
+                </VBox.margin>
+                <FlowPane fx:id="productContainer" hgap="20" vgap="20" prefWrapLength="900" />
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER" styleClass="footer" BorderPane.alignment="CENTER">
+            <Label text="© 2026 BidVault — Crafted for premium auctions" />
+        </HBox>
+    </bottom>
+</BorderPane>

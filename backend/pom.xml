@@ -53,6 +53,7 @@
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
 		</dependency>
+		
 
 		<!-- Security & JWT -->
 		<dependency>
@@ -143,6 +144,21 @@
 			<version>5.2.0</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-graphics</artifactId>
+			<version>21</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-controls</artifactId>
+			<version>21</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-fxml</artifactId>
+			<version>21</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -158,6 +174,10 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+					<arguments>
+						<argument>--add-modules</argument>
+						<argument>javafx.controls,javafx.fxml</argument>
+					</arguments>
 				</configuration>
 			</plugin>
 
@@ -202,6 +222,32 @@
 						-XX:+EnableDynamicAgentLoading
 						--add-opens java.base/java.lang=ALL-UNNAMED
 					</argLine>
+				</configuration>
+			</plugin>
+
+			<plugin>
+    			<groupId>org.openjfx</groupId>
+    			<artifactId>javafx-maven-plugin</artifactId>
+    			<version>0.0.8</version>
+    			<configuration>
+        			<mainClass>com.auction.app.AppApplication</mainClass>
+    			</configuration>
+			</plugin>
+
+			<!-- Exec Maven Plugin for running with proper JavaFX setup -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+					<mainClass>com.auction.app.AppApplication</mainClass>
+					<includePluginDependencies>false</includePluginDependencies>
+					<systemProperties>
+						<property>
+							<key>javafx.disableTransitiveStylesheetLoading</key>
+							<value>true</value>
+						</property>
+					</systemProperties>
 				</configuration>
 			</plugin>
 		</plugins>

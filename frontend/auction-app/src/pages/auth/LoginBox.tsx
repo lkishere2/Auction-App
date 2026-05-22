@@ -29,7 +29,7 @@ export default function LoginBox({ onError }: LoginBoxProps) {
             localStorage.setItem('refreshToken', response.data.refreshToken);
 
             // Redirect cleanly back to the Home Route (/)
-            navigate('/home');
+            window.location.href = '/home';
         } catch (error: any) {
             // Read backend error message directly from your response body structure
             const errorMsg = error.response?.data?.message || 'Invalid email address or password.';

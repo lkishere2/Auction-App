@@ -9,7 +9,6 @@ import com.auction.app.domains.users.users.User;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter

@@ -2,7 +2,6 @@ package com.auction.app.domains.transaction;
 
 import org.springframework.data.domain.Page;
 
-import java.math.BigDecimal;
 
 public interface TransactionService {
     // USER

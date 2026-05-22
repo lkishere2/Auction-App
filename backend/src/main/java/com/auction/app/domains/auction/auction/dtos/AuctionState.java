@@ -3,10 +3,8 @@ package com.auction.app.domains.auction.auction.dtos;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Set;
 
 import com.auction.app.domains.auction.auction.AuctionStatus;
-import com.auction.app.domains.products.Tag;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

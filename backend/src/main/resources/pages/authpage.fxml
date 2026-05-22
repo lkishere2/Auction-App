@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.app.ui.controller.AuthController">
+    <center>
+        <VBox alignment="CENTER" spacing="24" styleClass="auth-root">
+            <padding>
+                <Insets top="48" right="32" bottom="48" left="32" />
+            </padding>
+            
+            <VBox alignment="CENTER" spacing="8">
+                <Label text="BidVault" styleClass="auth-brand" />
+                <Label text="Sign in to experience premium auctions" styleClass="auth-subtitle" wrapText="true" textAlignment="CENTER" />
+            </VBox>
+
+            <VBox spacing="16" styleClass="auth-card" maxWidth="420">
+                <TextField fx:id="usernameField" promptText="Email or username" />
+                <PasswordField fx:id="passwordField" promptText="Password" />
+                <Button fx:id="loginButton" text="Continue" styleClass="auth-button" onAction="#onLogin" />
+            </VBox>
+        </VBox>
+    </center>
+</BorderPane>

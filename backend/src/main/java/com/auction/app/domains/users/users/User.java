@@ -53,9 +53,11 @@ public class User implements UserDetails {
     private boolean enabled;
 
     @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
     private boolean requestPasswordReset = false;
 
     @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
     private boolean passwordResetVerified = false;
 
     public String getDisplayName() {

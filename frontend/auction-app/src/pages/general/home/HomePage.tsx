@@ -3,9 +3,11 @@ import { Header } from '../../../components/header';
 import Footer from '../../../components/footer/Footer';
 import Welcome from './Welcome';
 import AuctionPreview from './AuctionPreview';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function HomePage() {
     const headerRef = useRef<HTMLDivElement>(null);
+    const { isLoggedIn, user, logout } = useAuth();
 
     useEffect(() => {
         if ('scrollRestoration' in window.history) {
@@ -47,7 +49,7 @@ export default function HomePage() {
                     zIndex: 50
                 }}
             >
-                <Header isLoggedIn={false} />
+                <Header isLoggedIn={isLoggedIn} user={user || undefined} onLogout={logout} />
             </div>
 
             <main className="flex-1">
