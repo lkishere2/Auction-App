@@ -9,8 +9,11 @@ import com.auction.app.domains.auction.auction.dtos.AuctionRequest;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
 import com.auction.app.domains.auction.auction.exception.*;
 import com.auction.app.domains.auction.auction.redis.AuctionCacheAdapter;
+import com.auction.app.domains.notifications.NotificationService;
+import com.auction.app.domains.notifications.NotificationType;
 import com.auction.app.domains.products.exceptions.ProductNotFoundException;
 import com.auction.app.domains.transaction.exceptions.AuthorizedException;
+import com.auction.app.domains.users.connection.ConnectionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +25,8 @@ import com.auction.app.domains.products.ProductRepository;
 import com.auction.app.domains.users.users.User;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -31,12 +36,15 @@ public class AuctionService {
     private final AuctionRepository auctionRepository;
     private final ProductRepository productRepository;
     private final AuctionCacheAdapter auctionCacheAdapter;
+    private final NotificationService notificationService;
 
     @Transactional
     public AuctionResponse createAuction(AuctionRequest request) {
+        User seller = currentUser();
+
         // Validate every info first
         validateTime(request.getStartTime(), request.getEndTime());
-        Product product = findProductByIdAndOwnerId(request.getProductId(), currentUser().getId());
+        Product product = findProductByIdAndOwnerId(request.getProductId(), seller.getId());
         validateProductAvailability(product);
         validateQuantity(request.getQuantity(), product.getQuantity());
 
@@ -45,11 +53,21 @@ public class AuctionService {
         productRepository.save(product);
 
         // Create new auction, and save to DB
-        Auction auction = mapToEntity(request, product);
+        Auction auction = mapToEntity(request, product, seller);
         Auction saved = auctionRepository.save(auction);
 
         // This helper convert DB's entity to Redis's entity, and then cache it
         cacheAuctionResponse(saved);
+
+        // Notify to all user
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        notificationService.notifyFollowersOfNewAuction(seller);
+                    }
+                }
+        );
 
         // Return the response to the user
         return AuctionResponse.from(saved);
@@ -57,11 +75,11 @@ public class AuctionService {
 
     @Transactional
     public AuctionResponse cancelAuction(Long auctionId) {
-
+        User seller = currentUser();
         Auction auction = findByIdWithDetails(auctionId);
 
         // Validation
-        validateUser(auction.getSeller());
+        validateUser(auction.getSeller(), seller);
         validateAuctionCancellation(auction);
 
         // Update the storage
@@ -141,6 +159,9 @@ public class AuctionService {
     // Helpers
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AuthorizedException("User is not authenticated");
+        }
         return (User) authentication.getPrincipal();
     }
 
@@ -170,8 +191,8 @@ public class AuctionService {
         }
     }
 
-    private void validateUser(User seller) {
-        if (seller.getId().equals(currentUser().getId())) {
+    private void validateUser(User seller, User currentUser) {
+        if (!seller.getId().equals(currentUser.getId())) {
             throw new AuthorizedException("You are not the seller of this auction");
         }
     }
@@ -187,13 +208,13 @@ public class AuctionService {
                 .orElseThrow(() -> new AuctionNotFoundException("Auction not found"));
     }
 
-    private Auction mapToEntity(AuctionRequest request, Product product) {
+    private Auction mapToEntity(AuctionRequest request, Product product, User seller) {
         BigDecimal startPrice = request.getStartingPrice();
         BigDecimal initialIncrement = startPrice.multiply(BigDecimal.valueOf(0.05))
                 .setScale(2, RoundingMode.HALF_UP);
 
         Auction auction = Auction.builder()
-                .seller(currentUser())
+                .seller(seller)
                 .product(product)
                 .auctionedQuantity(request.getQuantity())
                 .startingPrice(startPrice)

@@ -4,7 +4,7 @@ import com.auction.app.domains.auction.auction.Auction;
 import com.auction.app.domains.feedback.Feedback;
 import com.auction.app.domains.products.Product;
 import com.auction.app.domains.transaction.Transaction;
-import com.auction.app.domains.users.followers.Connection;
+import com.auction.app.domains.users.connection.Connection;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;

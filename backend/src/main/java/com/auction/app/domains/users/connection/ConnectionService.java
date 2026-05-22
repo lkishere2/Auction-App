@@ -1,4 +1,4 @@
-package com.auction.app.domains.users.followers;
+package com.auction.app.domains.users.connection;
 
 public interface ConnectionService {
     String toggleFollow(Long followingId);

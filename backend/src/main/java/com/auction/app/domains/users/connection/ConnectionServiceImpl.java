@@ -1,5 +1,7 @@
-package com.auction.app.domains.users.followers;
+package com.auction.app.domains.users.connection;
 
+import com.auction.app.domains.notifications.NotificationService;
+import com.auction.app.domains.notifications.NotificationType;
 import com.auction.app.domains.users.users.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,9 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Override
     @Transactional
@@ -43,6 +48,10 @@ public class ConnectionServiceImpl implements ConnectionService {
                     .following(following)
                     .build();
             connectionRepository.save(connection);
+
+            // New step's here! call the notification service
+            notificationService.createAndSend(following, follower, NotificationType.FOLLOWING);
+
             return "Followed successfully";
         }
     }
@@ -66,6 +75,9 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Unauthorized access");
+        }
         return (User) authentication.getPrincipal();
     }
 
