@@ -42,10 +42,10 @@ jobs:
         JWT_EXPIRY: ${{ secrets.JWT_EXPIRY }}
         
         # Redis
-        SPRING_DATA_REDIS_HOST: ${{ secrets.REDIS_HOST }}
-        SPRING_DATA_REDIS_PORT: ${{ secrets.REDIS_PORT }}
+        SPRING_DATA_REDIS_HOST: ${{ secrets.REDIS_HOST || 'localhost' }}
+        SPRING_DATA_REDIS_PORT: ${{ secrets.REDIS_PORT || 6379 }}
         SPRING_DATA_REDIS_SSL_ENABLED: true
-        SPRING_DATA_REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        SPRING_DATA_REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || '' }}
         
         # Mail
         SUPPORT_EMAIL: ${{ secrets.SUPPORT_EMAIL }}
