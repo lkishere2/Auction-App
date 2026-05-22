@@ -62,8 +62,8 @@ public class ConnectionServiceImpl implements ConnectionService {
             throw new RuntimeException("User not found");
         }
 
-        long followersCount = connectionRepository.countByFollowingId(userId);
-        long followingCount = connectionRepository.countByFollowerId(userId);
+        long followersCount = connectionRepository.countByFollowing_Id(userId);
+        long followingCount = connectionRepository.countByFollower_Id(userId);
 
         return new UserStats(followersCount, followingCount);
     }

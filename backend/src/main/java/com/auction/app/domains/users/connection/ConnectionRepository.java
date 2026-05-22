@@ -17,7 +17,7 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
 
     Optional<Connection> findByFollowerIdAndFollowingId(long followerId, long followingId);
 
-    long countByFollowerId(long userId);
+    long countByFollower_Id(long userId);
 
-    long countByFollowingId(long userId);
+    long countByFollowing_Id(long userId);
 }

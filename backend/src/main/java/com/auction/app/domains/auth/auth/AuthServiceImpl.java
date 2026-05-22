@@ -15,7 +15,7 @@ import com.auction.app.infrastructure.security.JwtService;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,25 +29,15 @@ import java.util.Optional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private JwtService jwtService;
-
-    @Autowired
-    private RefreshTokenService refreshTokenService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     public void register(RegisterRequest request, HttpServletRequest httpRequest) {
@@ -57,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
             User user = optionalUser.get();
 
             if (user.isEnabled()) {
-                throw new UserAlreadyExistsException("Email already registered");
+                return;
             }
 
             user.setUsername(request.getUsername());
@@ -88,16 +78,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()));
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
 
         User user = userRepository.findByEmail(request.getEmail())
-                // Throw BadCredentialsException here to obscure whether a user exists or not to potential attackers
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         if (!user.isEnabled()) {
-            throw new AccountNotVerifiedException("Account is not verified. Please verify your account.");
+            throw new BadCredentialsException("Invalid email or password.");
         }
 
         String accessToken = jwtService.generateToken(user);
@@ -152,17 +140,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void verifyUser(VerifyRequest verifyRequest) {
-        User user = userRepository.findByEmail(verifyRequest.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        User user = userRepository.findByEmail(verifyRequest.getEmail()).orElse(null);
 
-        if (user.isEnabled()) {
-            throw new AccountAlreadyVerifiedException("Account is already verified");
+        if (user == null || user.isEnabled() || !user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
+            throw new InvalidVerificationCodeException("The verification code is invalid or has expired.");
         }
+
         if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
             throw new VerificationCodeExpiredException("Verification code expired");
-        }
-        if (!user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
-            throw new InvalidVerificationCodeException("Invalid verification code");
         }
 
         user.setEnabled(true);
@@ -173,52 +158,43 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void resendVerificationCode(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        User user = userRepository.findByEmail(email).orElse(null);
 
-        if (user.isEnabled()) {
-            throw new AccountAlreadyVerifiedException("Account is already verified");
+        if (user == null || user.isEnabled()) {
+            return;
         }
 
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
-        sendVerificationEmail(user);
         userRepository.save(user);
+        sendVerificationEmail(user);
     }
 
     @Override
     public void requestPasswordReset(String email) {
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isEmpty()) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null || !user.isEnabled()) {
             return;
-        }
-
-        User user = optionalUser.get();
-
-        if (!user.isEnabled()) {
-            throw new AccountNotVerifiedException("Account is not verified. Please verify your account.");
         }
 
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
         user.setRequestPasswordReset(true);
-        sendVerificationEmail(user);
         userRepository.save(user);
+        sendVerificationEmail(user);
     }
 
     @Override
     public void verifyPasswordReset(VerifyRequest verifyRequest) {
-        User user = userRepository.findByEmail(verifyRequest.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        User user = userRepository.findByEmail(verifyRequest.getEmail()).orElse(null);
 
-        if (!user.isRequestPasswordReset()) {
-            throw new InvalidPasswordResetFlowException("You have not requested to reset your password. Try again later.");
+        if (user == null || !user.isRequestPasswordReset() || !user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
+            throw new InvalidVerificationCodeException("Invalid or expired verification code.");
         }
+
         if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
             throw new VerificationCodeExpiredException("Verification code expired");
-        }
-        if (!user.getVerificationCode().equals(verifyRequest.getVerificationCode())) {
-            throw new InvalidVerificationCodeException("Invalid verification code");
         }
 
         user.setVerificationCode(null);
@@ -229,15 +205,15 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void resetPassword(String email, String password) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        User user = userRepository.findByEmail(email).orElse(null);
 
-        if (!user.isPasswordResetVerified()) {
-            throw new InvalidPasswordResetFlowException("Password reset has not been verified");
+        if (user == null || !user.isPasswordResetVerified()) {
+            throw new InvalidPasswordResetFlowException("Invalid password reset request.");
         }
 
         user.setPassword(passwordEncoder.encode(password));
         user.setPasswordResetVerified(false);
+        user.setRequestPasswordReset(false);
         userRepository.save(user);
     }
 
