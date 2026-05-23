@@ -1,11 +1,11 @@
 package com.auction.app.transaction;
 
 import com.auction.app.domains.auth.exceptions.UserNotFoundException;
-import com.auction.app.domains.transaction.ClientRequest;
+import com.auction.app.domains.transaction.dtos.ClientRequest;
 import com.auction.app.domains.transaction.Transaction;
 import com.auction.app.domains.transaction.TransactionRepository;
-import com.auction.app.domains.transaction.TransactionRequest;
-import com.auction.app.domains.transaction.TransactionResponse;
+import com.auction.app.domains.transaction.dtos.TransactionRequest;
+import com.auction.app.domains.transaction.dtos.TransactionResponse;
 import com.auction.app.domains.transaction.TransactionServiceImpl;
 import com.auction.app.domains.transaction.TransactionStatus;
 import com.auction.app.domains.transaction.TransactionType;

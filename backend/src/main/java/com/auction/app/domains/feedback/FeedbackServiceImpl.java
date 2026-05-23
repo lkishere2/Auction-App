@@ -1,5 +1,7 @@
 package com.auction.app.domains.feedback;
 
+import com.auction.app.domains.feedback.dtos.FeedbackRequest;
+import com.auction.app.domains.feedback.dtos.FeedbackResponse;
 import com.auction.app.domains.feedback.exceptions.FeedBackNotFoundException;
 import com.auction.app.domains.users.users.User;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -92,8 +92,6 @@ public class UserServiceImpl implements UserService {
         return (User) authentication.getPrincipal();
     }
 
-
-
     private UserResponse mapToResponse(User user){
         return UserResponse.builder()
                 .username(user.getUsername())

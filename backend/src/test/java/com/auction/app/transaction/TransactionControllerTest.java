@@ -1,9 +1,9 @@
 package com.auction.app.transaction;
 
-import com.auction.app.domains.transaction.ClientRequest;
+import com.auction.app.domains.transaction.dtos.ClientRequest;
 import com.auction.app.domains.transaction.TransactionController;
-import com.auction.app.domains.transaction.TransactionRequest;
-import com.auction.app.domains.transaction.TransactionResponse;
+import com.auction.app.domains.transaction.dtos.TransactionRequest;
+import com.auction.app.domains.transaction.dtos.TransactionResponse;
 import com.auction.app.domains.transaction.TransactionService;
 import com.auction.app.domains.transaction.TransactionStatus;
 import com.auction.app.domains.transaction.TransactionType;
@@ -15,7 +15,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;

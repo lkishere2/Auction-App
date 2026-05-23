@@ -1,5 +1,7 @@
 package com.auction.app.domains.feedback;
 
+import com.auction.app.domains.feedback.dtos.FeedbackRequest;
+import com.auction.app.domains.feedback.dtos.FeedbackResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Slice;
 

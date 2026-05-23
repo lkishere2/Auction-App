@@ -1,5 +1,7 @@
 package com.auction.app.domains.products;
 
+import com.auction.app.domains.products.dtos.ProductRequest;
+import com.auction.app.domains.products.dtos.ProductResponse;
 import com.auction.app.domains.products.exceptions.ProductNotFoundException;
 import com.auction.app.domains.users.users.User;
 import org.springframework.beans.factory.annotation.Autowired;

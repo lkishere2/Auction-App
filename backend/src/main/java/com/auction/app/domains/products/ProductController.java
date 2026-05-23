@@ -1,5 +1,7 @@
 package com.auction.app.domains.products;
 
+import com.auction.app.domains.products.dtos.ProductRequest;
+import com.auction.app.domains.products.dtos.ProductResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;

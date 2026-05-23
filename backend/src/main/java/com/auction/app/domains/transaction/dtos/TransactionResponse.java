@@ -1,5 +1,7 @@
-package com.auction.app.domains.transaction;
+package com.auction.app.domains.transaction.dtos;
 
+import com.auction.app.domains.transaction.TransactionStatus;
+import com.auction.app.domains.transaction.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

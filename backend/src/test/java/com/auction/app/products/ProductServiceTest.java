@@ -2,8 +2,8 @@ package com.auction.app.products;
 
 import com.auction.app.domains.products.Product;
 import com.auction.app.domains.products.ProductRepository;
-import com.auction.app.domains.products.ProductRequest;
-import com.auction.app.domains.products.ProductResponse;
+import com.auction.app.domains.products.dtos.ProductRequest;
+import com.auction.app.domains.products.dtos.ProductResponse;
 import com.auction.app.domains.products.ProductServiceImpl;
 import com.auction.app.domains.products.Tag;
 import com.auction.app.domains.products.exceptions.ProductNotFoundException;

@@ -1,5 +1,6 @@
-package com.auction.app.domains.transaction;
+package com.auction.app.domains.transaction.dtos;
 
+import com.auction.app.domains.transaction.TransactionType;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import java.math.BigDecimal;

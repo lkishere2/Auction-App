@@ -1,5 +1,8 @@
 package com.auction.app.domains.transaction;
 
+import com.auction.app.domains.transaction.dtos.ClientRequest;
+import com.auction.app.domains.transaction.dtos.TransactionRequest;
+import com.auction.app.domains.transaction.dtos.TransactionResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -7,8 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("api/v1/transaction")

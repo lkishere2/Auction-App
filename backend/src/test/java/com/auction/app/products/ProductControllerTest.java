@@ -1,8 +1,8 @@
 package com.auction.app.products;
 
 import com.auction.app.domains.products.ProductController;
-import com.auction.app.domains.products.ProductRequest;
-import com.auction.app.domains.products.ProductResponse;
+import com.auction.app.domains.products.dtos.ProductRequest;
+import com.auction.app.domains.products.dtos.ProductResponse;
 import com.auction.app.domains.products.ProductService;
 import com.auction.app.domains.products.Tag;
 import com.auction.app.infrastructure.security.JwtAuthenticationFilter;
@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.domain.Page;
