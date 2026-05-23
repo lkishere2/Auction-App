@@ -52,7 +52,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/admin/all")
+    @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -60,7 +60,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers(page, size));
     }
 
-    @PatchMapping("/admin/disable/{id}")
+    @PatchMapping("/disable/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> disableUser(@PathVariable Long id) {
         userService.disableUser(id);

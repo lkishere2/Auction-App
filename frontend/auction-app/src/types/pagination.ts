@@ -1,7 +1,18 @@
 export interface Page<T> {
-    content: T[];
-    totalElements: number;
+    items: T[];
+    totalItems: number;
     totalPages: number;
-    number: number; // current page (0-based)
-    size: number;
+    currentPage: number;
+    pageSize: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+}
+
+export interface Slice<T> {
+    items: T[];
+    pageSize: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+    nextCursor?: string | null;
+    previousCursor?: string | null;
 }

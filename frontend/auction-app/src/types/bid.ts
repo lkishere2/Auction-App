@@ -1,5 +1,5 @@
 export interface BidRequest {
-    amount: string; // BigDecimal -> string
+    amount: string;
 }
 
 export interface BidResponse {
@@ -7,5 +7,5 @@ export interface BidResponse {
     auctionId: number;
     bidderLabel: string;
     amount: string;
-    placedAt: string; // ISO instant
+    placedAt: string;
 }

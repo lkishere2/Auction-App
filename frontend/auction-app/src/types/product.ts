@@ -29,7 +29,7 @@ export interface ProductResponse {
     quantity: number;
     productImageUrl?: string;
     tags?: Tag[] | Set<Tag>;
-    createdAt: string; // ISO datetime
+    createdAt: string;
 }
 
 export type PagedProducts = Page<ProductResponse>;

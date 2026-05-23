@@ -1,12 +1,5 @@
 import api, { logout } from './axios';
-import type {
-    AuthResponse,
-    EmailRequest,
-    LoginRequest,
-    RegisterRequest,
-    ResetPasswordRequest,
-    VerifyRequest,
-} from '../types/auth';
+import type { AuthResponse, EmailRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, VerifyRequest } from '../types/auth';
 
 export const authApi = {
     register: (data: RegisterRequest) =>

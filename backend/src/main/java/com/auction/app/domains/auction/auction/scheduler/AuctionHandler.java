@@ -7,6 +7,7 @@ import com.auction.app.domains.auction.auction.*;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
 import com.auction.app.domains.auction.auction.notification.AuctionPublisher;
 import com.auction.app.domains.auction.auction.redis.AuctionCacheAdapter;
+import com.auction.app.domains.auction.exceptions.AuctionNotFoundException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -41,18 +42,21 @@ public class AuctionHandler {
     @Scheduled(fixedRate = 100000)
     public void activateUpcomingAuctions() {
 
-        List<Auction> toActivate = auctionRepository.findUpcomingToActivate(AuctionStatus.UPCOMING, Instant.now());
+        List<Long> toActivateIds = auctionRepository.findUpcomingIdsToActivate(AuctionStatus.UPCOMING, Instant.now());
 
         // Return immediately if is empty
-        if (toActivate.isEmpty()) {
+        if (toActivateIds.isEmpty()) {
             return;
         }
 
-        for (Auction auction : toActivate) {
+        // Efficiently update database statuses using a single UPDATE query
+        auctionRepository.updateStatusForIds(toActivateIds, AuctionStatus.ACTIVE);
+
+        for (Long auctionId : toActivateIds) {
             try {
-                processActiveAuction(auction);
+                processActiveAuctionCacheAndNotifications(auctionId);
             } catch (Exception e) {
-                log.error("Failed to activate upcoming auction #{}: {}", auction.getId(), e.getMessage(), e);
+                log.error("Failed to activate upcoming auction #{}: {}", auctionId, e.getMessage(), e);
             }
         }
     }
@@ -61,25 +65,26 @@ public class AuctionHandler {
     @Scheduled(fixedRate = 100000)
     public void endActiveAuctions() {
 
-        List<Auction> toEnd = auctionRepository.findActiveToEnd(AuctionStatus.ACTIVE, Instant.now());
+        List<Long> toEndIds = auctionRepository.findActiveIdsToEnd(AuctionStatus.ACTIVE, Instant.now());
 
-        if (toEnd.isEmpty()) {
+        if (toEndIds.isEmpty()) {
             return;
         }
 
-        for (Auction auction : toEnd) {
+        for (Long auctionId : toEndIds) {
             try {
-                processEndedAuction(auction);
+                processEndedAuctionById(auctionId);
             } catch (Exception e) {
-                log.error("Failed to process ending for auction #{}: {}", auction.getId(), e.getMessage(), e);
+                log.error("Failed to process ending for auction #{}: {}", auctionId, e.getMessage(), e);
             }
         }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processActiveAuction(Auction auction) {
-        auction.setStatus(AuctionStatus.ACTIVE);
-        auctionRepository.save(auction);
+    public void processActiveAuctionCacheAndNotifications(Long auctionId) {
+        // Fetch the entity since cache mapping and publishing requires target data
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new AuctionNotFoundException("Auction not found: " + auctionId));
 
         // Update or create cache response, flip to ACTIVE
         AuctionResponse response = auctionCacheAdapter.getAuctionResponse(auction.getId());
@@ -93,6 +98,7 @@ public class AuctionHandler {
             // Cache doesn't exist.
             // Since 'auction' was just set to ACTIVE on the line above,
             // caching it now will automatically create it with an ACTIVE status!
+            auction.setStatus(AuctionStatus.ACTIVE);
             auctionService.cacheAuctionResponse(auction);
         }
 
@@ -102,7 +108,11 @@ public class AuctionHandler {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processEndedAuction(Auction auction) {
+    public void processEndedAuctionById(Long auctionId) {
+        // Fetch the full entity graph with details only for the targeted item processing closure
+        Auction auction = auctionRepository.findByIdWithDetails(auctionId)
+                .orElseThrow(() -> new AuctionNotFoundException("Auction not found: " + auctionId));
+
         // Sync final result
         AuctionResponse response = auctionCacheAdapter.getAuctionResponse(auction.getId());
         if (response != null) {
@@ -124,11 +134,11 @@ public class AuctionHandler {
         auctionRepository.save(auction);
 
         // Clear the cache post-commit
-        Long auctionId = auction.getId();
+        Long id = auction.getId();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                auctionCacheAdapter.clearAuctionCache(auctionId);
+                auctionCacheAdapter.clearAuctionCache(id);
             }
         });
 

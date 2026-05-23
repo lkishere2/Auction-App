@@ -2,10 +2,15 @@ package com.auction.app.domains.auction.auction;
 
 import java.util.List;
 
+import com.auction.app.domains.auction.auction.dtos.AuctionFindingRequest;
 import com.auction.app.domains.auction.auction.dtos.AuctionRequest;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/auctions")
 @RequiredArgsConstructor
 @Tag(name = "Auction")
+@Validated
 public class AuctionController {
     private final AuctionService auctionService;
 
@@ -39,17 +45,14 @@ public class AuctionController {
         return ResponseEntity.ok(auctionService.getAuction(auctionId));
     }
 
-    @GetMapping("/active")
-    public ResponseEntity<List<AuctionResponse>> getActiveAuctions() {
-        return ResponseEntity.ok(auctionService.getActiveAuctions());
+    @GetMapping("/discover")
+    public ResponseEntity<Page<AuctionResponse>> getDiscoverableAuctions(
+            @Valid AuctionFindingRequest request,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(auctionService.getDiscoverableAuctions(request, pageable));
     }
 
-    @GetMapping("/upcoming")
-    public ResponseEntity<List<AuctionResponse>> getUpcomingAuctions() {
-        return ResponseEntity.ok(auctionService.getUpcomingAuctions());
-    }
-
-    @GetMapping("/my")
+    @GetMapping("/me")
     public ResponseEntity<List<AuctionResponse>> getMyAuctions() {
         return ResponseEntity.ok(auctionService.getMyAuctions());
     }

@@ -1,5 +1,7 @@
 package com.auction.app.auction;
+
 import static org.assertj.core.api.Assertions.assertThat;
+
 import com.auction.app.domains.auction.auction.Auction;
 import com.auction.app.domains.auction.auction.AuctionRepository;
 import com.auction.app.domains.auction.auction.AuctionStatus;
@@ -14,6 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,34 +31,34 @@ import java.util.Set;
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 public class AuctionRepositoryTest {
 
-
-
     @Autowired
     private UserRepository userRepository;
     @Autowired
     private AuctionRepository auctionRepository;
     @Autowired
     private ProductRepository productRepository;
-    private User WhiteMouse;
+
+    private User whiteMouse;
     private Auction auction;
     private Product product;
     private Product product1;
+
     @BeforeEach
     void setUp() {
-        WhiteMouse = User.builder()
+        whiteMouse = User.builder()
                 .username("MickeyMouse")
                 .email("aaaa@gmail.com")
                 .password("123456")
                 .enabled(true)
                 .build();
-        WhiteMouse = userRepository.save(WhiteMouse);
+        whiteMouse = userRepository.save(whiteMouse);
 
         product = Product.builder()
                 .productName("iPhone 15 Pro")
                 .description("Apple smartphone")
                 .quantity(10)
                 .tags(new HashSet<>(Set.of(Tag.ELECTRONICS)))
-                .owner(WhiteMouse)
+                .owner(whiteMouse)
                 .build();
         product = productRepository.save(product);
 
@@ -62,12 +67,13 @@ public class AuctionRepositoryTest {
                 .description("Apple stupidphone")
                 .quantity(10)
                 .tags(new HashSet<>(Set.of(Tag.ELECTRONICS)))
-                .owner(WhiteMouse)
+                .owner(whiteMouse)
                 .build();
         product1 = productRepository.save(product1);
 
-        auction = auction.builder()
-                .seller(WhiteMouse)
+        // Fixed typo: call Auction.builder() statically instead of auction.builder()
+        auction = Auction.builder()
+                .seller(whiteMouse)
                 .product(product)
                 .auctionedQuantity(2)
                 .startingPrice(new BigDecimal("100000.00"))
@@ -106,10 +112,10 @@ public class AuctionRepositoryTest {
 
     @Test
     void findBySellerIdWithDetails_ShouldReturnAuctionsBySeller() {
-        List<Auction> auctions = auctionRepository.findBySellerIdWithDetails(WhiteMouse.getId());
+        List<Auction> auctions = auctionRepository.findBySellerIdWithDetails(whiteMouse.getId());
 
         assertThat(auctions).hasSize(1);
-        assertThat(auctions.get(0).getSeller().getId()).isEqualTo(WhiteMouse.getId());
+        assertThat(auctions.get(0).getSeller().getId()).isEqualTo(whiteMouse.getId());
     }
 
     @Test
@@ -137,56 +143,104 @@ public class AuctionRepositoryTest {
     }
 
     @Test
-    void findIdsByStatus_ShouldReturnOnlyIdsWithoutFetchJoins() {
-        List<Long> ids = auctionRepository.findIdsByStatus(AuctionStatus.UPCOMING);
-
-        assertThat(ids).hasSize(1);
-        assertThat(ids.get(0)).isEqualTo(auction.getId());
-    }
-
-    @Test
-    void findUpcomingToActivate_ShouldReturnAuctionsReadyToStart() {
-        // Tạo thêm 1 auction đã quá thời gian bắt đầu nhưng vẫn ở trạng thái UPCOMING
+    void findUpcomingIdsToActivate_ShouldReturnAuctionIdsReadyToStart() {
+        // Create an auction whose start time has already passed but is still UPCOMING
         Auction readyAuction = Auction.builder()
-                .seller(WhiteMouse)
+                .seller(whiteMouse)
                 .product(product1)
                 .auctionedQuantity(1)
                 .startingPrice(new BigDecimal("50000.00"))
                 .currentPrice(new BigDecimal("50000.00"))
                 .minBidIncrement(new BigDecimal("2000.00"))
-                .startTime(Instant.now().minusSeconds(60)) // Đã qua thời gian bắt đầu 1 phút
+                .startTime(Instant.now().minusSeconds(60)) // Started 1 minute ago
                 .endTime(Instant.now().plusSeconds(3600))
                 .status(AuctionStatus.UPCOMING)
                 .build();
-        auctionRepository.save(readyAuction);
+        readyAuction = auctionRepository.save(readyAuction);
 
-        // Kiểm tra xem method có lọc đúng dòng readyAuction (startTime <= now) và bỏ qua dòng ở setUp() không
-        List<Auction> processable = auctionRepository.findUpcomingToActivate(AuctionStatus.UPCOMING, Instant.now());
+        // Retrieve only IDs matching optimization patterns
+        List<Long> processableIds = auctionRepository.findUpcomingIdsToActivate(AuctionStatus.UPCOMING, Instant.now());
 
-        assertThat(processable).hasSize(1);
-        assertThat(processable.get(0).getId()).isEqualTo(readyAuction.getId());
+        assertThat(processableIds).hasSize(1);
+        assertThat(processableIds.get(0)).isEqualTo(readyAuction.getId());
     }
 
     @Test
-    void findActiveToEnd_ShouldReturnAuctionsReadyToFinish() {
-        // Tạo 1 cuộc đấu giá đang ACTIVE và đã quá giờ kết thúc
+    void findActiveIdsToEnd_ShouldReturnAuctionIdsReadyToFinish() {
+        // Create an ACTIVE auction whose end time has already passed
         Auction expiredAuction = Auction.builder()
-                .seller(WhiteMouse)
+                .seller(whiteMouse)
                 .product(product1)
                 .auctionedQuantity(1)
                 .startingPrice(new BigDecimal("50000.00"))
                 .currentPrice(new BigDecimal("50000.00"))
                 .minBidIncrement(new BigDecimal("2000.00"))
                 .startTime(Instant.now().minusSeconds(7200))
-                .endTime(Instant.now().minusSeconds(60)) // Đã kết thúc cách đây 1 phút
+                .endTime(Instant.now().minusSeconds(60)) // Ended 1 minute ago
                 .status(AuctionStatus.ACTIVE)
                 .build();
-        auctionRepository.save(expiredAuction);
+        expiredAuction = auctionRepository.save(expiredAuction);
 
-        List<Auction> processable = auctionRepository.findActiveToEnd(AuctionStatus.ACTIVE, Instant.now());
+        List<Long> processableIds = auctionRepository.findActiveIdsToEnd(AuctionStatus.ACTIVE, Instant.now());
 
-        assertThat(processable).hasSize(1);
-        assertThat(processable.get(0).getId()).isEqualTo(expiredAuction.getId());
+        assertThat(processableIds).hasSize(1);
+        assertThat(processableIds.get(0)).isEqualTo(expiredAuction.getId());
+    }
+
+    @Test
+    void updateStatusForIds_ShouldBulkUpdateStatusesAndClearPersistenceContext() {
+        Auction secondAuction = Auction.builder()
+                .seller(whiteMouse)
+                .product(product1)
+                .auctionedQuantity(1)
+                .startingPrice(new BigDecimal("70000.00"))
+                .currentPrice(new BigDecimal("70000.00"))
+                .minBidIncrement(new BigDecimal("3500.00"))
+                .startTime(Instant.now().plusSeconds(3600))
+                .endTime(Instant.now().plusSeconds(86400))
+                .status(AuctionStatus.UPCOMING)
+                .build();
+        secondAuction = auctionRepository.save(secondAuction);
+
+        List<Long> idsToUpdate = List.of(auction.getId(), secondAuction.getId());
+
+        int updatedCount = auctionRepository.updateStatusForIds(idsToUpdate, AuctionStatus.ACTIVE);
+        assertThat(updatedCount).isEqualTo(2);
+
+        // Verify changes are flushed out to the database context accurately
+        Auction verifiedFirst = auctionRepository.findById(auction.getId()).orElseThrow();
+        Auction verifiedSecond = auctionRepository.findById(secondAuction.getId()).orElseThrow();
+
+        assertThat(verifiedFirst.getStatus()).isEqualTo(AuctionStatus.ACTIVE);
+        assertThat(verifiedSecond.getStatus()).isEqualTo(AuctionStatus.ACTIVE);
+    }
+
+    @Test
+    void findAuctions_ShouldFilterByParametersCorrectlyUsingNativeQuery() {
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 1. Test filtering by product name substring match (case insensitive)
+        Page<Auction> resultsByName = auctionRepository.findAuctions(
+                "15 pro", null, false, null, null, null, null, pageable
+        );
+        assertThat(resultsByName.getContent()).hasSize(1);
+        assertThat(resultsByName.getContent().get(0).getId()).isEqualTo(auction.getId());
+
+        // 2. Test filtering by Tags matching requirements
+        Page<Auction> resultsWithMatchingTag = auctionRepository.findAuctions(
+                null, List.of("ELECTRONICS"), true, null, null, null, null, pageable
+        );
+        assertThat(resultsWithMatchingTag.getContent()).hasSize(1);
+
+        Page<Auction> resultsWithUnmatchedTag = auctionRepository.findAuctions(
+                null, List.of("BOOKS"), true, null, null, null, null, pageable
+        );
+        assertThat(resultsWithUnmatchedTag.getContent()).isEmpty();
+
+        // 3. Test filtering by dynamic status values
+        Page<Auction> resultsByStatus = auctionRepository.findAuctions(
+                null, null, false, null, null, null, "UPCOMING", pageable
+        );
+        assertThat(resultsByStatus.getContent()).hasSize(1);
     }
 }
-
