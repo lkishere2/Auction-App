@@ -9,10 +9,9 @@ export const feedbackApi = {
 
     deleteFeedback: (id: number) => api.delete<void>(`/feedback/${id}`),
 
-    getCurrentUserFeedback: (page = 0, size = 10) =>
-        api.get<FeedbackResponse[]>('/feedback/my', { params: { page, size } }),
+    getCurrentUserFeedback: (page = 0, size = 10) => api.get<FeedbackResponse[]>(`/feedback/my?page=${page}&size=${size}`),
 
-    getAllFeedback: (page = 0, size = 20) => api.get<Page<FeedbackResponse>>('/feedback', { params: { page, size } }),
+    getAllFeedback: (page = 0, size = 20) => api.get<Page<FeedbackResponse>>(`/feedback/all?page=${page}&size=${size}`),
 };
 
 export default feedbackApi;

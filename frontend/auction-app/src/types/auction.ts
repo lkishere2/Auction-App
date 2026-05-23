@@ -1,5 +1,6 @@
 import type { Tag } from './product';
-import type { AuctionStatus } from './auctionEnums';
+
+export type AuctionStatus = 'UPCOMING' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
 
 export interface AuctionRequest {
     productId: number;

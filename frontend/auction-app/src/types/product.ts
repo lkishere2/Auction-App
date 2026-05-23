@@ -32,4 +32,3 @@ export interface ProductResponse {
     createdAt: string; // ISO datetime
 }
 
-export type PagedProducts = Page<ProductResponse>;

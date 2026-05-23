@@ -17,7 +17,7 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody @Valid RegisterRequest request, HttpServletRequest httpRequest) {
+            public ResponseEntity<String> register(@RequestBody @Valid RegisterRequest request, HttpServletRequest httpRequest) {
         authService.register(request, httpRequest);
         return ResponseEntity.ok("Verification code has been sent!");
     }

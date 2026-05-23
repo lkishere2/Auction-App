@@ -1,19 +1,10 @@
 import api, { logout } from './axios';
-import type {
-    AuthResponse,
-    EmailRequest,
-    LoginRequest,
-    RegisterRequest,
-    ResetPasswordRequest,
-    VerifyRequest,
-} from '../types/auth';
+import type {AuthResponse, EmailRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, VerifyRequest} from '../types/auth';
 
 export const authApi = {
-    register: (data: RegisterRequest) =>
-        api.post<string>('/auth/register', data),
+    register: (data: RegisterRequest) => api.post<string>('/auth/register', data),
 
-    login: (data: LoginRequest) =>
-        api.post<AuthResponse>('/auth/login', data),
+    login: (data: LoginRequest) => api.post<AuthResponse>('/auth/login', data),
 
     logout, // POST /auth/logout — handled in axios.ts (sends X-Refresh-Token header + blacklists JTI)
 
@@ -24,7 +15,7 @@ export const authApi = {
         api.post<string>('/auth/verify', data),
 
     resendVerificationCode: (email: string) =>
-        api.post<string>('/auth/verify/resend', { email } satisfies EmailRequest),
+        api.post<string>('/auth/verify/resend', { email } satisfies EmailRequest),  
 
     requestPasswordReset: (email: string) =>
         api.post<string>('/auth/password-reset/request', { email } satisfies EmailRequest),

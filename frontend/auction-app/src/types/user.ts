@@ -1,5 +1,3 @@
-import type { Page } from './pagination';
-
 export interface UserResponse {
     username: string;
     email: string;
@@ -19,4 +17,3 @@ export interface PasswordRequest {
     newPassword: string;
 }
 
-export type PagedUsers = Page<UserResponse>;
