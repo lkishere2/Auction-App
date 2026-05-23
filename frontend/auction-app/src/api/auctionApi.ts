@@ -2,6 +2,7 @@ import api from './axios';
 import type { AuctionRequest, AuctionResponse } from '../types/auction';
 
 export const auctionApi = {
+
     createAuction: (data: AuctionRequest) => api.post<AuctionResponse>('/auctions', data),
 
     cancelAuction: (auctionId: number) => api.delete<AuctionResponse>(`/auctions/${auctionId}`),
@@ -13,6 +14,7 @@ export const auctionApi = {
     getUpcoming: () => api.get<AuctionResponse[]>('/auctions/upcoming'),
 
     getMyAuctions: () => api.get<AuctionResponse[]>('/auctions/my'),
+
 };
 
 export default auctionApi;

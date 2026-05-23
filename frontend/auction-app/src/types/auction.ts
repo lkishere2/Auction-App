@@ -2,15 +2,6 @@ import type { Tag } from './product';
 
 export type AuctionStatus = 'UPCOMING' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
 
-export interface AuctionFindingRequest {
-    productName?: string;
-    tags?: Tag[];
-    startTime?: string;
-    endTime?: string;
-    minStartingPrice?: string;
-    status?: AuctionStatus;
-}
-
 export interface AuctionRequest {
     productId: number;
     quantity: number;

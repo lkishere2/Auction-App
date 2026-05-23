@@ -1,5 +1,3 @@
-import type { Page } from './pagination';
-
 export type Tag =
     | 'ELECTRONICS'
     | 'FOOD'
@@ -32,4 +30,3 @@ export interface ProductResponse {
     createdAt: string;
 }
 
-export type PagedProducts = Page<ProductResponse>;

@@ -52,7 +52,7 @@ public class FeedbackController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping
+    @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<FeedbackResponse>> getAllFeedback(
             @RequestParam(defaultValue = "0") int page,

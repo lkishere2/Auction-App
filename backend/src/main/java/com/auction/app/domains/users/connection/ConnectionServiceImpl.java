@@ -1,7 +1,10 @@
 package com.auction.app.domains.users.connection;
 
+import com.auction.app.domains.auth.exceptions.UserNotFoundException;
+import com.auction.app.domains.feedback.exceptions.UnauthorizedException;
 import com.auction.app.domains.notifications.NotificationService;
 import com.auction.app.domains.notifications.NotificationType;
+import com.auction.app.domains.users.connection.exceptions.SelfFollowException;
 import com.auction.app.domains.users.users.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +33,7 @@ public class ConnectionServiceImpl implements ConnectionService {
         Long followerId = currentUser().getId();
 
         if (followerId.equals(followingId)) {
-            throw new RuntimeException("You cannot follow yourself.");
+            throw new SelfFollowException("You cannot follow yourself.");
         }
 
         Optional<Connection> optionalConnection = connectionRepository.findByFollowerIdAndFollowingId(followerId, followingId);
@@ -59,7 +62,7 @@ public class ConnectionServiceImpl implements ConnectionService {
     @Override
     public UserStats getUserStats(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found");
+            throw new UserNotFoundException("User not found");
         }
 
         long followersCount = connectionRepository.countByFollowing_Id(userId);
@@ -70,13 +73,13 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     private User findUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found!"));
+                .orElseThrow(() -> new UserNotFoundException("User not found!"));
     }
 
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("Unauthorized access");
+            throw new UnauthorizedException("Unauthorized access");
         }
         return (User) authentication.getPrincipal();
     }
