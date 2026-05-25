@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class AuctionCacheAdapter {
+public class AuctionCacheAdapter implements AuctionRedisPort {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String RESPONSE_PREFIX = "auction:response:";

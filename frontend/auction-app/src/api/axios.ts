@@ -1,82 +1,73 @@
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 
-// ─── Storage helpers ──────────────────────────────────────────────────────────
+// Our base URL
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-const TOKEN_KEY = 'accessToken';
-const REFRESH_KEY = 'refreshToken';
-
-export const tokenStorage = {
-    getAccess: () => localStorage.getItem(TOKEN_KEY),
-    getRefresh: () => localStorage.getItem(REFRESH_KEY),
-    set: (accessToken: string, refreshToken: string) => {
-        localStorage.setItem(TOKEN_KEY, accessToken);
-        localStorage.setItem(REFRESH_KEY, refreshToken);
-    },
-    clear: () => {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(REFRESH_KEY);
-    },
-};
-
-// ─── Axios instance ───────────────────────────────────────────────────────────
-
-const BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-
-const api = axios.create({
-    baseURL: BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
-
-// ─── Request interceptor: attach access token ─────────────────────────────────
-
-api.interceptors.request.use(
-    (config) => {
-        const token = tokenStorage.getAccess();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
-
-// ─── Token refresh state ──────────────────────────────────────────────────────
-// Prevents multiple concurrent requests from each triggering their own refresh.
-
-let isRefreshing = false;
-let pendingQueue: Array<{
-    resolve: (token: string) => void;
-    reject: (err: unknown) => void;
-}> = [];
-
-function flushQueue(error: unknown, token: string | null) {
-    pendingQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)));
-    pendingQueue = [];
-}
-
-// ─── Response interceptor: handle 401 → refresh → retry ──────────────────────
-
-// Endpoints that should never trigger a refresh attempt on 401.
-// A failed login/register is a user error, not an expired token.
-const AUTH_WRITE_PATHS = [
+/**
+ * Auth endpoints that should never trigger a token-refresh on 401.
+ * A failed login/register is a user credential error, not an expired token.
+ */
+const SKIP_REFRESH_PATHS = [
     '/auth/login',
     '/auth/register',
     '/auth/refresh',
     '/auth/logout',
 ];
 
-function isAuthWritePath(url: string | undefined): boolean {
-    if (!url) return false;
-    return AUTH_WRITE_PATHS.some((path) => url.includes(path));
+// Axios instance 
+// withCredentials: true tells the browser to send httpOnly cookies on every
+// request. The server sets/clears tokens via Set-Cookie — JS never touches them.
+
+const api = axios.create({
+    baseURL: BASE_URL,
+    headers: { 'Content-Type': 'application/json' },
+    withCredentials: true,
+});
+
+// Refresh token queue
+// Holds requests that arrived while a refresh was already in flight,
+// so we only ever make one refresh call at a time.
+
+type QueueEntry = {
+    resolve: () => void;
+    reject: (err: unknown) => void;
+};
+
+let isRefreshing = false;
+let refreshQueue: QueueEntry[] = [];
+
+function enqueueRequest(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        refreshQueue.push({ resolve, reject });
+    });
 }
+
+function flushRefreshQueue(error: unknown) {
+    refreshQueue.forEach((entry) =>
+        error ? entry.reject(error) : entry.resolve()
+    );
+    refreshQueue = [];
+}
+
+// Refresh token logic
 
 interface RetryableConfig extends AxiosRequestConfig {
     _retry?: boolean;
 }
+
+function shouldSkipRefresh(url: string | undefined): boolean {
+    return SKIP_REFRESH_PATHS.some((path) => url?.includes(path));
+}
+
+async function refreshAccessToken(): Promise<void> {
+    // Cookies are sent automatically via withCredentials.
+    // The server reads the httpOnly refresh token cookie and responds with
+    // Set-Cookie headers containing the new access + refresh tokens.
+    await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+}
+
+// Response interceptor
 
 api.interceptors.response.use(
     (response) => response,
@@ -84,64 +75,31 @@ api.interceptors.response.use(
         const originalRequest: RetryableConfig = error.config;
         const status: number | undefined = error.response?.status;
 
-        // Only intercept 401s that aren't from auth write endpoints and haven't retried yet.
-        if (
-            status !== 401 ||
-            originalRequest._retry ||
-            isAuthWritePath(originalRequest.url)
-        ) {
+        const shouldIntercept =
+            status === 401 &&
+            !originalRequest._retry &&
+            !shouldSkipRefresh(originalRequest.url);
+
+        if (!shouldIntercept) {
             return Promise.reject(error);
         }
 
-        const refreshToken = tokenStorage.getRefresh();
-
-        // No refresh token at all → clear storage and redirect.
-        if (!refreshToken) {
-            tokenStorage.clear();
-            window.location.href = '/login';
-            return Promise.reject(error);
-        }
-
-        // If a refresh is already in-flight, queue this request.
+        // A refresh is already in-flight → queue this request.
         if (isRefreshing) {
-            return new Promise<string>((resolve, reject) => {
-                pendingQueue.push({ resolve, reject });
-            }).then((newAccessToken) => {
-                originalRequest.headers = {
-                    ...originalRequest.headers,
-                    Authorization: `Bearer ${newAccessToken}`,
-                };
-                return api(originalRequest);
-            });
+            return enqueueRequest().then(() => api(originalRequest));
         }
 
-        // This request is the one doing the refresh.
+        // This request kicks off the refresh.
         originalRequest._retry = true;
         isRefreshing = true;
 
         try {
-            // POST /api/v1/auth/refresh  body: { refreshToken }
-            // Backend returns: { accessToken, refreshToken, expiresIn }
-            const { data } = await axios.post(`${BASE_URL}/auth/refresh`, {
-                refreshToken,
-            });
-
-            const { accessToken: newAccess, refreshToken: newRefresh } = data;
-            tokenStorage.set(newAccess, newRefresh);
-
-            // Patch the default header so subsequent requests use the new token immediately.
-            api.defaults.headers.common['Authorization'] = `Bearer ${newAccess}`;
-
-            flushQueue(null, newAccess);
-
-            originalRequest.headers = {
-                ...originalRequest.headers,
-                Authorization: `Bearer ${newAccess}`,
-            };
+            await refreshAccessToken();
+            // Server has set new cookies — just retry queued requests as-is.
+            flushRefreshQueue(null);
             return api(originalRequest);
         } catch (refreshError) {
-            flushQueue(refreshError, null);
-            tokenStorage.clear();
+            flushRefreshQueue(refreshError);
             window.location.href = '/login';
             return Promise.reject(refreshError);
         } finally {
@@ -150,28 +108,18 @@ api.interceptors.response.use(
     }
 );
 
-// ─── Logout helper ────────────────────────────────────────────────────────────
-// Mirrors AuthServiceImpl.logout: sends both Bearer + X-Refresh-Token so the
-// backend can blacklist the access token's JTI and delete the refresh token.
+// Logout
 
+/**
+ * Notifies the server to invalidate the current tokens (server clears the
+ * cookies via Set-Cookie), then redirects to /login.
+ * Always redirects even if the server call fails.
+ */
 export async function logout(): Promise<void> {
-    const refreshToken = tokenStorage.getRefresh();
+    await api.post('/auth/logout').catch(() => {
+        // Intentionally swallowed — redirect always runs.
+    });
 
-    await api
-        .post(
-            '/auth/logout',
-            {},
-            {
-                headers: {
-                    ...(refreshToken ? { 'X-Refresh-Token': refreshToken } : {}),
-                },
-            }
-        )
-        .catch(() => {
-            // Always clear locally even if the server call fails.
-        });
-
-    tokenStorage.clear();
     window.location.href = '/login';
 }
 

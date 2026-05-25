@@ -1,6 +1,6 @@
 package com.auction.app.transaction;
 
-import com.auction.app.domains.auth.exceptions.UserNotFoundException;
+import com.auction.app.domains.users.exceptions.UserNotFoundException;
 import com.auction.app.domains.transaction.dtos.ClientRequest;
 import com.auction.app.domains.transaction.Transaction;
 import com.auction.app.domains.transaction.TransactionRepository;
@@ -9,10 +9,6 @@ import com.auction.app.domains.transaction.dtos.TransactionResponse;
 import com.auction.app.domains.transaction.TransactionServiceImpl;
 import com.auction.app.domains.transaction.TransactionStatus;
 import com.auction.app.domains.transaction.TransactionType;
-import com.auction.app.domains.transaction.exceptions.AuthorizedException;
-import com.auction.app.domains.transaction.exceptions.PoorException;
-import com.auction.app.domains.transaction.exceptions.TransactionNotFoundException;
-import com.auction.app.domains.transaction.exceptions.TransactionNotPendingException;
 import com.auction.app.domains.users.users.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.junit.jupiter.api.AfterEach;

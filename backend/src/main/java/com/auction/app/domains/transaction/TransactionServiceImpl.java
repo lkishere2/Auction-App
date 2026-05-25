@@ -1,13 +1,13 @@
 package com.auction.app.domains.transaction;
 
-import com.auction.app.domains.auth.exceptions.UserNotFoundException;
+import com.auction.app.domains.users.exceptions.UserNotFoundException;
 import com.auction.app.domains.transaction.dtos.ClientRequest;
 import com.auction.app.domains.transaction.dtos.TransactionRequest;
 import com.auction.app.domains.transaction.dtos.TransactionResponse;
-import com.auction.app.domains.transaction.exceptions.AuthorizedException;
-import com.auction.app.domains.transaction.exceptions.PoorException;
+import com.auction.app.domains.transaction.exceptions.UnauthorizedTransactionException;
+import com.auction.app.domains.transaction.exceptions.InsufficientFundsException;
 import com.auction.app.domains.transaction.exceptions.TransactionNotFoundException;
-import com.auction.app.domains.transaction.exceptions.TransactionNotPendingException;
+import com.auction.app.domains.transaction.exceptions.InvalidTransactionStateException;
 import com.auction.app.domains.users.users.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -49,10 +50,10 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public void deleteTransaction(Long id) {
         Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found with ID: " + id));
 
         if (!transaction.getUser().getId().equals(currentUser().getId())) {
-            throw new AuthorizedException("Unauthorized: You do not make this transaction.");
+            throw new UnauthorizedTransactionException("Access denied: You do not own this transaction resource.");
         }
 
         transactionRepository.delete(transaction);
@@ -69,22 +70,21 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public void acceptTransaction(ClientRequest clientRequest) {
         Transaction transaction = transactionRepository.findById(clientRequest.getTransactionId())
-                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found with ID: " + clientRequest.getTransactionId()));
 
         User user = userRepository.findById(clientRequest.getUserId())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + clientRequest.getUserId()));
 
         if (transaction.getStatus() != TransactionStatus.PENDING) {
-            throw new TransactionNotPendingException("Only pending transactions can be accepted.");
+            throw new InvalidTransactionStateException("Action rejected: Only pending transactions can be accepted.");
         }
 
         BigDecimal currentBalance = user.getBalance();
         if (clientRequest.getType().equals(TransactionType.DEPOSIT)) {
             user.setBalance(currentBalance.add(clientRequest.getAmount()));
-        }
-        else {
+        } else {
             if (currentBalance.compareTo(clientRequest.getAmount()) < 0) {
-                throw new PoorException("Insufficient funds for withdrawal.");
+                throw new InsufficientFundsException("Transaction failed: Insufficient wallet balance for withdrawal.");
             }
             user.setBalance(currentBalance.subtract(clientRequest.getAmount()));
         }
@@ -98,11 +98,10 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public void cancelTransaction(Long id) {
         Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found"));
+                .orElseThrow(() -> new TransactionNotFoundException("Transaction not found with ID: " + id));
 
-        // Only PENDING transactions should typically be cancellable
         if (transaction.getStatus() != TransactionStatus.PENDING) {
-            throw new TransactionNotPendingException("Only pending transactions can be cancelled.");
+            throw new InvalidTransactionStateException("Action rejected: Only pending transactions can be cancelled.");
         }
 
         transaction.setStatus(TransactionStatus.FAILED);
@@ -112,9 +111,12 @@ public class TransactionServiceImpl implements TransactionService {
     // Helpers
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+            throw new BadCredentialsException("User session is invalid or expired.");
+        }
         return (User) authentication.getPrincipal();
     }
-    // send to user
+
     private TransactionResponse mapToResponse(Transaction transaction) {
         return TransactionResponse.builder()
                 .amount(transaction.getAmount())
@@ -123,10 +125,9 @@ public class TransactionServiceImpl implements TransactionService {
                 .createdAt(transaction.getCreatedAt())
                 .build();
     }
-    //send to admin
+
     private ClientRequest mapToClientRequest(Transaction transaction) {
         User user = transaction.getUser();
-
         return ClientRequest.builder()
                 .transactionId(transaction.getId())
                 .userId(user.getId())
@@ -143,6 +144,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .user(currentUser())
                 .amount(request.getAmount())
                 .type(request.getType())
+                .status(TransactionStatus.PENDING) // Explicitly setting state to PENDING on birth
                 .build();
     }
 }

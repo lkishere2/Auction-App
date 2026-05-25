@@ -29,7 +29,7 @@ public class Auction {
     private User seller;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = true)
+    @JoinColumn(name = "product_id")
     private Product product;
 
     @Column(nullable = false)

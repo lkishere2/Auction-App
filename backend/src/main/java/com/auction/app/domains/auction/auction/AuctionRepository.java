@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
@@ -69,6 +70,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     List<Long> findActiveIdsToEnd(@Param("status") AuctionStatus status, @Param("now") Instant now);
 
     @Modifying(clearAutomatically = true)
+    @Transactional
     @Query("UPDATE Auction a SET a.status = :newStatus WHERE a.id IN :ids")
     int updateStatusForIds(@Param("ids") List<Long> ids, @Param("newStatus") AuctionStatus newStatus);
 

@@ -7,6 +7,7 @@ import com.auction.app.domains.users.users.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -55,9 +56,12 @@ public class FeedbackServiceImpl implements FeedbackService {
         return feedbackRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    //Helpers
+    // Helpers
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+            throw new BadCredentialsException("User session is invalid or expired.");
+        }
         return (User) authentication.getPrincipal();
     }
 

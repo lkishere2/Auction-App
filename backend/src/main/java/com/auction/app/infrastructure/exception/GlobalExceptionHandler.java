@@ -2,8 +2,15 @@ package com.auction.app.infrastructure.exception;
 
 import java.time.Instant;
 
+import com.auction.app.domains.auction.exceptions.*;
 import com.auction.app.domains.auth.exceptions.*;
+import com.auction.app.domains.feedback.exceptions.FeedBackNotFoundException;
 import com.auction.app.domains.products.exceptions.ProductNotFoundException;
+import com.auction.app.domains.transaction.exceptions.InsufficientFundsException;
+import com.auction.app.domains.transaction.exceptions.InvalidTransactionStateException;
+import com.auction.app.domains.transaction.exceptions.TransactionNotFoundException;
+import com.auction.app.domains.transaction.exceptions.UnauthorizedTransactionException;
+import com.auction.app.domains.users.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,13 +32,11 @@ public class GlobalExceptionHandler {
 //    }
 
     // Validation
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);
-    }
-
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+    @ExceptionHandler({
+            MethodArgumentNotValidException.class,
+            ConstraintViolationException.class
+    })
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(Exception ex, HttpServletRequest request) {
         return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);
     }
 
@@ -41,30 +46,24 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex, HttpStatus.FORBIDDEN, request); // 403
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+    @ExceptionHandler({
+            RefreshTokenExpiredException.class,
+            RefreshTokenSuspiciousActivityException.class,
+            BadCredentialsException.class
+    })
+    public ResponseEntity<ErrorResponse> handleUnauthorizedRefreshExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildErrorResponse(ex, HttpStatus.UNAUTHORIZED, request); // 401
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler({
+            RefreshTokenNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleUserNotFound(RuntimeException ex, HttpServletRequest request) {
         return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request); // 404
     }
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex, HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.CONFLICT, request); // 409
-    }
-
-    @ExceptionHandler(AccountNotVerifiedException.class)
-    public ResponseEntity<ErrorResponse> handleAccountNotVerified(AccountNotVerifiedException ex, HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.FORBIDDEN, request); // 403
-    }
-
     @ExceptionHandler({
-            AccountAlreadyVerifiedException.class,
             InvalidVerificationCodeException.class,
-            VerificationCodeExpiredException.class,
             InvalidPasswordResetFlowException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequestAuthExceptions(RuntimeException ex, HttpServletRequest request) {
@@ -76,9 +75,73 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, request); // 500
     }
 
-    // Product
+    // Auction domain (main system)
+    @ExceptionHandler({
+            AuctionNotFoundException.class,
+            BidNotFoundException.class,
+    })
+    public ResponseEntity<ErrorResponse> handleAuctionNotFound(RuntimeException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request); // 404
+    }
+
+    @ExceptionHandler({
+            InvalidEndTimeException.class,
+            ListedProductException.class,
+            InvalidProductQuantity.class,
+            NotUpcommingAuctionException.class,
+            InvalidBidException.class,
+            InsufficientBalanceException.class
+    })
+    public ResponseEntity<ErrorResponse> handleAuctionValidationExceptions(RuntimeException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request); // 400
+    }
+
+    // User domain
+    @ExceptionHandler({
+            UserNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request); // 404
+    }
+
+    @ExceptionHandler({
+            InvalidPasswordException.class,
+            InvalidUserStateException.class,
+            UserUpdateException.class,
+            SelfFollowException.class
+    })
+    public ResponseEntity<ErrorResponse> handleUserValidationExceptions(RuntimeException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);
+    }
+
+    // Transaction domain
+    @ExceptionHandler(TransactionNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTransactionNotFound(TransactionNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request); // 404
+    }
+
+    @ExceptionHandler(UnauthorizedTransactionException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedTransaction(UnauthorizedTransactionException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.FORBIDDEN, request); // 403
+    }
+
+    @ExceptionHandler({
+            InsufficientFundsException.class,
+            InvalidTransactionStateException.class
+    })
+    public ResponseEntity<ErrorResponse> handleTransactionValidationExceptions(RuntimeException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request); // 400
+    }
+
+    // Product domain
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleProductNotFound(ProductNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request); // 404
+    }
+
+    // Feedback domain
+    @ExceptionHandler(FeedBackNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleFeedbackNotFound(FeedBackNotFoundException ex, HttpServletRequest request) {
         return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request); // 404
     }
 

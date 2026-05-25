@@ -4,6 +4,7 @@ import type { NotificationResponse } from "../types/notification";
 
 export const notificationApi = {
 
-    getMyNotificationsFeed: () => api.get<Slice<NotificationResponse>>('/notifications/feed'),
+    getMyNotificationsFeed: () =>
+        api.get<Slice<NotificationResponse>>('/notifications/feed'),
 
 };

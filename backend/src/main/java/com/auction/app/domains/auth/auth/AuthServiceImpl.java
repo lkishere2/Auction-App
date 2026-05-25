@@ -9,7 +9,7 @@ import com.auction.app.domains.auth.email.EmailService;
 import com.auction.app.domains.auth.exceptions.EmailSendFailureException;
 import com.auction.app.domains.auth.exceptions.InvalidPasswordResetFlowException;
 import com.auction.app.domains.auth.exceptions.InvalidVerificationCodeException;
-import com.auction.app.domains.auth.exceptions.UserNotFoundException;
+import com.auction.app.domains.users.exceptions.UserNotFoundException;
 import com.auction.app.domains.auth.refreshToken.RefreshToken;
 import com.auction.app.domains.auth.refreshToken.RefreshTokenService;
 import com.auction.app.domains.users.users.Provider;

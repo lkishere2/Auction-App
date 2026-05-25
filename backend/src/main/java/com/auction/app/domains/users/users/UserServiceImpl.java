@@ -1,5 +1,9 @@
 package com.auction.app.domains.users.users;
 
+import com.auction.app.domains.users.exceptions.UserNotFoundException;
+import com.auction.app.domains.users.exceptions.InvalidPasswordException;
+import com.auction.app.domains.users.exceptions.InvalidUserStateException;
+import com.auction.app.domains.users.exceptions.UserUpdateException;
 import com.auction.app.domains.users.users.dtos.EmailRequest;
 import com.auction.app.domains.users.users.dtos.PasswordRequest;
 import com.auction.app.domains.users.users.dtos.UserResponse;
@@ -8,6 +12,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,12 +43,12 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updateEmail(EmailRequest emailRequest) {
         String newEmail = emailRequest.getEmail();
-        //Valid check
+        // Valid check
         if (newEmail.equals(currentUser().getEmail())) {
-            throw new RuntimeException("New email must be different from current email");
+            throw new UserUpdateException("Update failed: New email must be different from current email.");
         }
         if (userRepository.existsByEmail(newEmail)) {
-            throw new RuntimeException("Email is already in use");
+            throw new UserUpdateException("Update failed.");
         }
 
         userRepository.updateEmail(currentUser().getId(), newEmail);
@@ -53,10 +58,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updatePassword(PasswordRequest passwordRequest) {
         if (!passwordEncoder.matches(passwordRequest.getCurrentPassword(), currentUser().getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new InvalidPasswordException("Update failed: Current password is incorrect.");
         }
         if (passwordRequest.getCurrentPassword().equals(passwordRequest.getNewPassword())) {
-            throw new RuntimeException("New password must be different from current password");
+            throw new InvalidPasswordException("Update failed: New password must be different from current password.");
         }
 
         userRepository.updatePassword(currentUser().getId(), passwordEncoder.encode(passwordRequest.getNewPassword()));
@@ -76,11 +81,11 @@ public class UserServiceImpl implements UserService {
     public void disableUser(Long id) {
         // Prevent admin from disabling their own account
         if (currentUser().getId().equals(id)) {
-            throw new RuntimeException("You cannot disable your own account");
+            throw new InvalidUserStateException("Action rejected: You cannot disable your own account.");
         }
 
         User userToDisable = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
 
         userToDisable.setRole(Role.DISABLE);
         userRepository.save(userToDisable);
@@ -89,6 +94,9 @@ public class UserServiceImpl implements UserService {
     //HELPERS
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+            throw new BadCredentialsException("User session is invalid or expired.");
+        }
         return (User) authentication.getPrincipal();
     }
 

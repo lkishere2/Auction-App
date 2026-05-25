@@ -1,13 +1,13 @@
 package com.auction.app.domains.users.connection;
 
-import com.auction.app.domains.auth.exceptions.UserNotFoundException;
-import com.auction.app.domains.feedback.exceptions.UnauthorizedException;
+import com.auction.app.domains.users.exceptions.UserNotFoundException;
+import com.auction.app.domains.users.exceptions.SelfFollowException;
 import com.auction.app.domains.notifications.NotificationService;
 import com.auction.app.domains.notifications.NotificationType;
-import com.auction.app.domains.users.connection.exceptions.SelfFollowException;
 import com.auction.app.domains.users.users.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,7 @@ public class ConnectionServiceImpl implements ConnectionService {
         Long followerId = currentUser().getId();
 
         if (followerId.equals(followingId)) {
-            throw new SelfFollowException("You cannot follow yourself.");
+            throw new SelfFollowException("Action rejected: You cannot follow your own account.");
         }
 
         Optional<Connection> optionalConnection = connectionRepository.findByFollowerIdAndFollowingId(followerId, followingId);
@@ -62,7 +62,7 @@ public class ConnectionServiceImpl implements ConnectionService {
     @Override
     public UserStats getUserStats(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new UserNotFoundException("User not found");
+            throw new UserNotFoundException("User not found with ID: " + userId);
         }
 
         long followersCount = connectionRepository.countByFollowing_Id(userId);
@@ -78,8 +78,8 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Unauthorized access");
+        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+            throw new BadCredentialsException("User session is invalid or expired.");
         }
         return (User) authentication.getPrincipal();
     }

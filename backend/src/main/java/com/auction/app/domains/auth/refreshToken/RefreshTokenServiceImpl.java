@@ -1,5 +1,8 @@
 package com.auction.app.domains.auth.refreshToken;
 
+import com.auction.app.domains.auth.exceptions.RefreshTokenExpiredException;
+import com.auction.app.domains.auth.exceptions.RefreshTokenNotFoundException;
+import com.auction.app.domains.auth.exceptions.RefreshTokenSuspiciousActivityException;
 import com.auction.app.domains.users.users.User;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,11 +55,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     public RefreshToken verifyRefreshToken(String token, HttpServletRequest request) {
         RefreshToken currentToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+                .orElseThrow(() -> new RefreshTokenNotFoundException("Refresh token not found"));
 
         if (currentToken.getExpiresAt().before(new Date())) {
             deleteRefreshToken(token, String.valueOf(currentToken.getUserId()));
-            throw new RuntimeException("Refresh token expired");
+            throw new RefreshTokenExpiredException("Refresh token expired");
         }
 
         String currentIp = request.getRemoteAddr();
@@ -64,7 +67,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         if (!currentToken.getIpAddress().equals(currentIp) ||
                 !currentToken.getUserAgent().equals(currentAgent)) {
-            throw new RuntimeException("Refresh token metadata mismatch");
+            throw new RefreshTokenSuspiciousActivityException("Refresh token metadata mismatch");
         }
 
         return currentToken;
@@ -91,8 +94,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     public boolean isAccessTokenBlacklisted(String jti) {
-        return Boolean.TRUE.equals(
-                stringRedisTemplate.hasKey(BLACKLIST_PREFIX + jti)
-        );
+        return stringRedisTemplate.hasKey(BLACKLIST_PREFIX + jti);
     }
 }

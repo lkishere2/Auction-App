@@ -1,7 +1,0 @@
-package com.auction.app.domains.feedback.exceptions;
-
-public class UnauthorizedException extends RuntimeException {
-    public UnauthorizedException(String message) {
-        super(message);
-    }
-}

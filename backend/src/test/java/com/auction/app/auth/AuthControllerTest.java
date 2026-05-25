@@ -6,7 +6,7 @@ import com.auction.app.domains.auth.auth.dtos.AuthResponse;
 import com.auction.app.domains.auth.exceptions.EmailSendFailureException;
 import com.auction.app.domains.auth.exceptions.InvalidPasswordResetFlowException;
 import com.auction.app.domains.auth.exceptions.InvalidVerificationCodeException;
-import com.auction.app.domains.auth.exceptions.UserNotFoundException;
+import com.auction.app.domains.users.exceptions.UserNotFoundException;
 import com.auction.app.infrastructure.exception.GlobalExceptionHandler;
 import com.auction.app.infrastructure.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
