@@ -7,5 +7,5 @@ export interface FeedbackResponse {
     username: string;
     email: string;
     content: string;
-    createdAt: string; // ISO datetime
+    createdAt: string;
 }

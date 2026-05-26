@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.sql.ConnectionBuilder;
 
 @Getter
 @Setter
@@ -16,5 +15,5 @@ public class UserResponse {
     private String username;
     private String email;
     private BigDecimal balance;
-
+    private String profileImageUrl;
 }

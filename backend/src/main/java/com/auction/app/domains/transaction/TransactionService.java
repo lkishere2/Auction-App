@@ -1,8 +1,9 @@
 package com.auction.app.domains.transaction;
 
+import com.auction.app.domains.transaction.dtos.ClientRequest;
+import com.auction.app.domains.transaction.dtos.TransactionRequest;
+import com.auction.app.domains.transaction.dtos.TransactionResponse;
 import org.springframework.data.domain.Page;
-
-import java.math.BigDecimal;
 
 public interface TransactionService {
     // USER

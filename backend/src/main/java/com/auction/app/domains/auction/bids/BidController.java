@@ -3,10 +3,10 @@ package com.auction.app.domains.auction.bids;
 import java.security.Principal;
 import java.util.List;
 
+import com.auction.app.domains.auction.auction.AuctionService;
 import com.auction.app.domains.auction.bids.dtos.BidRequest;
 import com.auction.app.domains.auction.bids.dtos.BidResponse;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
-import com.auction.app.domains.auction.auction.AuctionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class BidController {
         bidService.placeBid(auctionId, request, principal);
     }
 
-    @GetMapping("/{auctionId}/bids")
+    @GetMapping("/bids/{auctionId}")
     public ResponseEntity<List<BidResponse>> getBidHistory(@PathVariable Long auctionId) {
         return ResponseEntity.ok(bidService.getBidHistory(auctionId));
     }

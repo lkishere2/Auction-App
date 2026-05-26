@@ -1,65 +1,103 @@
 package com.auction.app.domains.users.users;
 
+import com.auction.app.domains.users.exceptions.UserNotFoundException;
+import com.auction.app.domains.users.exceptions.InvalidPasswordException;
+import com.auction.app.domains.users.exceptions.InvalidUserStateException;
+import com.auction.app.domains.users.exceptions.UserUpdateException;
 import com.auction.app.domains.users.users.dtos.EmailRequest;
 import com.auction.app.domains.users.users.dtos.PasswordRequest;
+import com.auction.app.domains.users.users.dtos.ProfileImageRequest;
 import com.auction.app.domains.users.users.dtos.UserResponse;
 import com.auction.app.domains.users.users.dtos.UsernameRequest;
+import com.auction.app.domains.users.users.model.Role;
+import com.auction.app.domains.users.users.model.User;
+import com.auction.app.infrastructure.security.SecurityUtils;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final SecurityUtils securityUtils;
 
     @Override
     public UserResponse getCurrentUserInfo() {
-        User user = currentUser();
-        return mapToResponse(user);
+        try {
+            User user = securityUtils.getCurrentUser();
+            return mapToResponse(user);
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
+        }
     }
 
     @Override
     @Transactional
     public void updateUsername(UsernameRequest usernameRequest) {
-        userRepository.updateUsername(currentUser().getId(), usernameRequest.getUsername());
+        try {
+            userRepository.updateUsername(securityUtils.getCurrentUserId(), usernameRequest.getUsername());
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
+        }
     }
 
     @Override
     @Transactional
     public void updateEmail(EmailRequest emailRequest) {
         String newEmail = emailRequest.getEmail();
-        //Valid check
-        if (newEmail.equals(currentUser().getEmail())) {
-            throw new RuntimeException("New email must be different from current email");
-        }
-        if (userRepository.existsByEmail(newEmail)) {
-            throw new RuntimeException("Email is already in use");
+        User user;
+        try {
+            user = securityUtils.getCurrentUser();
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
         }
 
-        userRepository.updateEmail(currentUser().getId(), newEmail);
+        // Valid check
+        if (newEmail.equals(user.getEmail())) {
+            throw new UserUpdateException("Update failed: New email must be different from current email.");
+        }
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new UserUpdateException("Update failed.");
+        }
+
+        userRepository.updateEmail(user.getId(), newEmail);
     }
 
     @Override
     @Transactional
     public void updatePassword(PasswordRequest passwordRequest) {
-        if (!passwordEncoder.matches(passwordRequest.getCurrentPassword(), currentUser().getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
-        }
-        if (passwordRequest.getCurrentPassword().equals(passwordRequest.getNewPassword())) {
-            throw new RuntimeException("New password must be different from current password");
+        User user;
+        try {
+            user = securityUtils.getCurrentUser();
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
         }
 
-        userRepository.updatePassword(currentUser().getId(), passwordEncoder.encode(passwordRequest.getNewPassword()));
+        if (!passwordEncoder.matches(passwordRequest.getCurrentPassword(), user.getPassword())) {
+            throw new InvalidPasswordException("Update failed: Current password is incorrect.");
+        }
+        if (passwordRequest.getCurrentPassword().equals(passwordRequest.getNewPassword())) {
+            throw new InvalidPasswordException("Update failed: New password must be different from current password.");
+        }
+
+        userRepository.updatePassword(user.getId(), passwordEncoder.encode(passwordRequest.getNewPassword()));
+    }
+
+    @Override
+    @Transactional
+    public void updateProfileImage(ProfileImageRequest profileImageRequest) {
+        try {
+            userRepository.updateProfileImageUrl(securityUtils.getCurrentUserId(), profileImageRequest.getProfileImageUrl());
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
+        }
     }
 
     @Override
@@ -74,31 +112,29 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void disableUser(Long id) {
-        // Prevent admin from disabling their own account
-        if (currentUser().getId().equals(id)) {
-            throw new RuntimeException("You cannot disable your own account");
+        try {
+            // Prevent admin from disabling their own account
+            if (securityUtils.getCurrentUserId().equals(id)) {
+                throw new InvalidUserStateException("Action rejected: You cannot disable your own account.");
+            }
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
         }
 
         User userToDisable = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
 
         userToDisable.setRole(Role.DISABLE);
         userRepository.save(userToDisable);
     }
 
-    //HELPERS
-    private User currentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (User) authentication.getPrincipal();
-    }
-
-
-
+    // Helpers
     private UserResponse mapToResponse(User user){
         return UserResponse.builder()
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .balance(user.getBalance())
+                .profileImageUrl(user.getProfileImageUrl())
                 .build();
     }
 }

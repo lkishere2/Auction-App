@@ -14,23 +14,29 @@ import com.auction.app.domains.auction.bids.dtos.BidNotificationPayload;
 import com.auction.app.domains.auction.bids.dtos.BidRequest;
 import com.auction.app.domains.auction.bids.dtos.BidResponse;
 import com.auction.app.domains.auction.bids.dtos.PendingBid;
-import com.auction.app.domains.auction.bids.exceptions.InvalidBidException;
+import com.auction.app.domains.auction.bids.model.Bid;
+import com.auction.app.domains.auction.bids.model.BidStatus;
+import com.auction.app.domains.auction.exceptions.AuctionNotFoundException;
+import com.auction.app.domains.auction.exceptions.BidNotFoundException;
+import com.auction.app.domains.auction.exceptions.InsufficientBalanceException;
+import com.auction.app.domains.auction.exceptions.InvalidBidException;
+import com.auction.app.domains.users.exceptions.UserNotFoundException;
+
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.auction.app.domains.auction.auction.Auction;
+import com.auction.app.domains.auction.auction.model.Auction;
 import com.auction.app.domains.auction.auction.redis.AuctionCacheAdapter;
 import com.auction.app.domains.auction.auction.AuctionRepository;
-import com.auction.app.domains.auction.auction.AuctionStatus;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.auction.auction.model.AuctionStatus;
+import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserRepository;
+import com.auction.app.infrastructure.security.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-// TODO: Double check the bid service
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -41,12 +47,16 @@ public class BidService {
     private final UserRepository userRepository;
     private final AuctionCacheAdapter auctionCacheAdapter;
     private final AuctionPublisher publisher;
+    private final SecurityUtils securityUtils;
 
     private static final long SNIPER_PROTECTION_SECONDS = 120L;
     private static final BigDecimal INCREMENT_PERCENTAGE = BigDecimal.valueOf(0.05);
 
     @Transactional
     public void placeBid(Long auctionId, BidRequest request, Principal principal) {
+        if (principal == null) {
+            throw new InvalidBidException("Authentication required to place a bid.");
+        }
 
         // Fetch some info
         User bidder = (User) ((Authentication) principal).getPrincipal();
@@ -132,7 +142,6 @@ public class BidService {
                 .build());
     }
 
-    // TODO: PAGINATE THESE TWO METHODS
     public List<BidResponse> getBidHistory(Long auctionId) {
         return bidRepository.findByAuctionIdOrderByPlacedAtDesc(auctionId)
                 .stream()
@@ -141,9 +150,12 @@ public class BidService {
     }
 
     public List<Long> getAuctionsBiddenByCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User) authentication.getPrincipal();
-        return bidRepository.findDistinctAuctionIdsByBidderId(user.getId());
+        try {
+            Long currentUserId = securityUtils.getCurrentUserId();
+            return bidRepository.findDistinctAuctionIdsByBidderId(currentUserId);
+        } catch (IllegalStateException e) {
+            throw new InvalidBidException("User is not authenticated.");
+        }
     }
 
     // Helpers
@@ -172,40 +184,38 @@ public class BidService {
     private AuctionResponse getActiveAuctionResponse(Long auctionId) {
         AuctionResponse response = auctionCacheAdapter.getAuctionResponse(auctionId);
         if (response == null || response.getStatus() != AuctionStatus.ACTIVE) {
-            throw new RuntimeException("Auction not found or not active");
+            throw new AuctionNotFoundException("Auction with ID " + auctionId + " is not found or not active.");
         }
         return response;
     }
 
     private Auction findAuctionById(Long auctionId) {
         return auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new RuntimeException("Auction not found"));
+                .orElseThrow(() -> new AuctionNotFoundException("Auction with ID " + auctionId + " was not found."));
     }
 
     private Bid findBidById(Long bidId) {
         return bidRepository.findById(bidId)
-                .orElseThrow(() -> new RuntimeException("Bid record not found"));
+                .orElseThrow(() -> new BidNotFoundException("Bid record with ID " + bidId + " was not found."));
     }
 
     private User findBidderById(Long bidderId) {
         return userRepository.findById(bidderId)
-                .orElseThrow(() -> new RuntimeException("Bidder not found"));
-
+                .orElseThrow(() -> new UserNotFoundException("Bidder with ID " + bidderId + " was not found."));
     }
 
     // Validators
     private void validateBidAmount(BigDecimal amount, AuctionResponse response) {
         BigDecimal minimumBid = response.getCurrentPrice().add(response.getMinBidIncrement());
         if (amount.compareTo(minimumBid) < 0) {
-            throw new RuntimeException("Bid must be at least " + minimumBid + " (current price + 5%)");
+            throw new InvalidBidException("Bid must be at least " + minimumBid + " (current price + minimum increment)");
         }
     }
 
-    // TODO: CHECK SPENDABLE
     private void validateSpendableBalance(User bidder, BigDecimal amount) {
         BigDecimal spendable = getSpendableBalance(bidder);
         if (amount.compareTo(spendable) > 0) {
-            throw new RuntimeException("Insufficient balance. Spendable: " + spendable);
+            throw new InsufficientBalanceException("Insufficient spendable balance. Available: " + spendable + ", Attempted: " + amount);
         }
     }
 
@@ -242,7 +252,6 @@ public class BidService {
                 });
     }
 
-    // TODO: CHECK SNIPER
     private boolean applySniperProtection(AuctionResponse response) {
         Instant now = Instant.now();
         if (Duration.between(now, response.getEndTime()).getSeconds() < SNIPER_PROTECTION_SECONDS) {
@@ -255,13 +264,5 @@ public class BidService {
 
     private BigDecimal calculateIncrement(BigDecimal amount) {
         return amount.multiply(INCREMENT_PERCENTAGE).setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private User currentUser() {
-        Authentication authentication = (Authentication) SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            throw new RuntimeException("Not authenticated");
-        }
-        return (User) authentication.getPrincipal();
     }
 }

@@ -10,7 +10,7 @@ export interface TransactionResponse {
     amount: string;
     type: TransactionType;
     status: TransactionStatus;
-    createdAt: string; // ISO datetime
+    createdAt: string;
 }
 
 export interface ClientRequest {

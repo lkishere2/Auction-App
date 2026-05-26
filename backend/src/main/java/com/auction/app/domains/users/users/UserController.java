@@ -2,8 +2,10 @@ package com.auction.app.domains.users.users;
 
 import com.auction.app.domains.users.users.dtos.EmailRequest;
 import com.auction.app.domains.users.users.dtos.PasswordRequest;
+import com.auction.app.domains.users.users.dtos.ProfileImageRequest;
 import com.auction.app.domains.users.users.dtos.UserResponse;
 import com.auction.app.domains.users.users.dtos.UsernameRequest;
+import com.auction.app.domains.users.users.model.User;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +54,13 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/admin/all")
+    @PatchMapping("/update-profile-image")
+    public ResponseEntity<Void> updateProfileImage(@Valid @RequestBody ProfileImageRequest profileImageRequest) {
+        userService.updateProfileImage(profileImageRequest);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -60,7 +68,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers(page, size));
     }
 
-    @PatchMapping("/admin/disable/{id}")
+    @PatchMapping("/disable/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> disableUser(@PathVariable Long id) {
         userService.disableUser(id);

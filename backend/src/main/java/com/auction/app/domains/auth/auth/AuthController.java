@@ -17,9 +17,9 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody @Valid RegisterRequest request, HttpServletRequest httpRequest) {
+            public ResponseEntity<String> register(@RequestBody @Valid RegisterRequest request, HttpServletRequest httpRequest) {
         authService.register(request, httpRequest);
-        return ResponseEntity.ok("Send verification code for user!");
+        return ResponseEntity.ok("Verification code has been sent!");
     }
 
     @PostMapping("/login")
@@ -47,13 +47,13 @@ public class AuthController {
     @PostMapping("/verify/resend")
     public ResponseEntity<String> resendVerificationCode(@RequestBody @Valid EmailRequest request) {
         authService.resendVerificationCode(request.getEmail());
-        return ResponseEntity.ok("Send verification code for user!");
+        return ResponseEntity.ok("Verification code has been sent!");
     }
 
     @PostMapping("/password-reset/request")
     public ResponseEntity<String> requestPasswordReset(@RequestBody @Valid EmailRequest request) {
         authService.requestPasswordReset(request.getEmail());
-        return ResponseEntity.ok("Send password reset verification code for user!");
+        return ResponseEntity.ok("Password reset verification code has been sent!");
     }
 
     @PostMapping("/password-reset/verify")

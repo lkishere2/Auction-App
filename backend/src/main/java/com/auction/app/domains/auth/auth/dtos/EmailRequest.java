@@ -12,7 +12,7 @@ public class EmailRequest {
 
     @NotNull(message = "Email is required")
     @NotEmpty(message = "Email cannot be empty")
-    @Email
+    @Email(message = "Invalid email format")
     private String email;
 
 }

@@ -1,38 +1,53 @@
 package com.auction.app.domains.products;
 
+import com.auction.app.domains.products.dtos.ProductRequest;
+import com.auction.app.domains.products.dtos.ProductResponse;
 import com.auction.app.domains.products.exceptions.ProductNotFoundException;
-import com.auction.app.domains.users.users.User;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.auction.app.domains.products.model.Product;
+import com.auction.app.domains.products.model.Tag;
+import com.auction.app.domains.users.users.model.User;
+import com.auction.app.infrastructure.security.SecurityUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
+    private final SecurityUtils securityUtils;
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProductResponse> getStorage(int page, int size, String keyword, Set<Tag> tags) {
+    public Page<ProductResponse> getStorage(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return productRepository.findByKeywordAndTags(currentUser().getId(), keyword, tags, pageable)
-                .map(this::mapToResponse);
+        try {
+            return productRepository.findAllUserProducts(securityUtils.getCurrentUserId(), pageable)
+                    .map(this::mapToResponse);
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
+        }
     }
 
     @Override
     @Transactional
     public ProductResponse addProduct(ProductRequest productRequest) {
-        Product product = mapToEntity(productRequest, currentUser());
+        User user;
+        try {
+            user = securityUtils.getCurrentUser();
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
+        }
+        Product product = mapToEntity(productRequest, user);
         return mapToResponse(productRepository.save(product));
     }
 
@@ -55,8 +70,12 @@ public class ProductServiceImpl implements ProductService {
     private Product findProductAndValidateUser(long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found."));
-        if (!product.getOwner().getId().equals(currentUser().getId())) {
-            throw new AccessDeniedException("Unauthorized: You do not own this product.");
+        try {
+            if (!product.getOwner().getId().equals(securityUtils.getCurrentUserId())) {
+                throw new AccessDeniedException("Unauthorized: You do not own this product.");
+            }
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
         }
         return product;
     }
@@ -97,10 +116,5 @@ public class ProductServiceImpl implements ProductService {
             return Set.of(Tag.OTHER);
         }
         return tags;
-    }
-
-    private User currentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (User) authentication.getPrincipal();
     }
 }

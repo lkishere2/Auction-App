@@ -1,5 +1,7 @@
 package com.auction.app.domains.feedback;
 
+import com.auction.app.domains.feedback.dtos.FeedbackRequest;
+import com.auction.app.domains.feedback.dtos.FeedbackResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +52,7 @@ public class FeedbackController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping
+    @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<FeedbackResponse>> getAllFeedback(
             @RequestParam(defaultValue = "0") int page,

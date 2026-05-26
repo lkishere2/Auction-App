@@ -13,7 +13,7 @@ public class VerifyRequest {
 
     @NotNull(message = "Email is required")
     @NotEmpty(message = "Email cannot be empty")
-    @Email
+    @Email(message = "Invalid email format")
     private String email;
 
     @Range(min = 100000, max = 999999, message = "Code must be between 100000 and 999999")

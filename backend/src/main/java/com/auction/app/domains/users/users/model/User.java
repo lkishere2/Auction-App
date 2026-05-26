@@ -1,0 +1,112 @@
+package com.auction.app.domains.users.users.model;
+
+import com.auction.app.domains.auction.auction.model.Auction;
+import com.auction.app.domains.feedback.model.Feedback;
+import com.auction.app.domains.products.model.Product;
+import com.auction.app.domains.transaction.model.Transaction;
+import com.auction.app.domains.users.connection.Connection;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
+import java.math.BigDecimal;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "users")
+public class User implements UserDetails {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "username", nullable = false)
+    private String username;
+
+    @Column(name = "email", nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "password", nullable = false)
+    private String password;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Provider provider = Provider.LOCAL;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Role role = Role.USER;
+
+    private boolean enabled;
+
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Product> myStorage;
+
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Feedback> myFeedback;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Transaction> transactions;
+
+    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
+    private List<Auction> myAuction;
+
+    @OneToMany(mappedBy = "winner", cascade = CascadeType.ALL)
+    private List<Auction> myReward;
+
+    // People who are following this user
+    @OneToMany(mappedBy = "following", cascade = CascadeType.ALL)
+    private List<Connection> followers;
+
+    // People who this user is currently following
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL)
+    private List<Connection> following;
+
+    @Column(name = "balance", nullable = false, precision = 19, scale = 2, columnDefinition = "numeric(19,2) default 0.00")
+    @Builder.Default
+    private BigDecimal balance = BigDecimal.ZERO;
+
+    public String getDisplayName() {
+        return this.username;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+}

@@ -6,10 +6,12 @@ import lombok.Data;
 
 @Data
 public class PasswordRequest {
+
     @NotBlank
     private String currentPassword;
 
     @NotBlank
     @Size(min = 6, max = 15)
     private String newPassword;
+
 }

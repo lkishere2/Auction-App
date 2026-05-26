@@ -1,13 +1,13 @@
 import type { Tag } from './product';
-import type { AuctionStatus } from './auctionEnums';
+
+export type AuctionStatus = 'UPCOMING' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
 
 export interface AuctionRequest {
     productId: number;
     quantity: number;
-    // BigDecimal -> string
     startingPrice: string;
-    startTime: string; // ISO instant
-    endTime: string; // ISO instant
+    startTime: string;
+    endTime: string;
 }
 
 export interface AuctionResponse {
@@ -15,17 +15,26 @@ export interface AuctionResponse {
     sellerLabel: string;
     productId: number;
     productName: string;
-    productTags?: Tag[];
+    productTags: Tag[];
     productDescription?: string;
     productImageUrl?: string;
     auctionedQuantity: number;
     startingPrice: string;
-    currentPrice?: string;
-    minBidIncrement?: string;
+    currentPrice: string;
+    minBidIncrement: string;
     startTime: string;
     endTime: string;
     extended: boolean;
     status: AuctionStatus;
     winnerLabel?: string;
-    bidCount?: number;
+    bidCount: number;
+}
+
+export interface AuctionFindingRequest {
+    productName?: string;
+    tags?: string[];
+    startTime?: string;
+    endTime?: string;
+    minStartingPrice?: string;
+    status?: AuctionStatus;
 }

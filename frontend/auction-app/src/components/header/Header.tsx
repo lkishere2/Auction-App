@@ -1,6 +1,5 @@
 import { Gavel } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import NavItem from './NavItem';
 import LoginButton from './LoginButton';
 import ProfileButton from './ProfileButton';
 
@@ -11,12 +10,6 @@ interface HeaderProps {
     };
     onLogout?: () => void;
 }
-
-const NAV_ITEMS = [
-    { label: 'Home', to: '/' },
-    { label: 'Market', to: '/market' },
-    { label: 'Explore', to: '/explore' },
-];
 
 export default function Header({ user, onLogout }: HeaderProps) {
     const navigate = useNavigate();
@@ -41,7 +34,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
                     padding: '0 32px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '32px',
+                    justifyContent: 'space-between',
                 }}
             >
                 <button
@@ -85,22 +78,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
                     </span>
                 </button>
 
-                <div style={{ flex: 1 }} />
-
-                <nav
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px'
-                    }}
-                    aria-label="Main navigation"
-                >
-                    {NAV_ITEMS.map((item) => (
-                        <NavItem key={item.to} label={item.label} to={item.to} />
-                    ))}
-                </nav>
-
-                <div style={{ marginLeft: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
                     {user ? (
                         <ProfileButton
                             username={user.username}

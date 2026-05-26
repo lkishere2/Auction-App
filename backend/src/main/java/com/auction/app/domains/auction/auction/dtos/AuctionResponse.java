@@ -6,9 +6,9 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.auction.app.domains.auction.auction.Auction;
-import com.auction.app.domains.auction.auction.AuctionStatus;
-import com.auction.app.domains.products.Tag;
+import com.auction.app.domains.auction.auction.model.Auction;
+import com.auction.app.domains.auction.auction.model.AuctionStatus;
+import com.auction.app.domains.products.model.Tag;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,7 +40,7 @@ public class AuctionResponse implements Serializable {
     public static AuctionResponse from(Auction auction) {
         return AuctionResponse.builder()
                 .id(auction.getId())
-                .sellerLabel(auction.getSeller().getDisplayName() + " #" + auction.getSeller().getId())
+                .sellerLabel(auction.getSeller().getDisplayName())
                 .productId(auction.getProduct().getId())
                 .productName(auction.getProduct().getProductName())
                 .productTags(new HashSet<>(auction.getProduct().getTags()))
@@ -54,7 +54,7 @@ public class AuctionResponse implements Serializable {
                 .endTime(auction.getEndTime())
                 .status(auction.getStatus())
                 .winnerLabel(auction.getWinner() != null
-                        ? auction.getWinner().getDisplayName() + " #" + auction.getWinner().getId()
+                        ? auction.getWinner().getDisplayName()
                         : null)
                 .bidCount(auction.getBidCount())
                 .build();
