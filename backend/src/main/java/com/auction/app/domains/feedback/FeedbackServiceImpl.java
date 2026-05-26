@@ -5,20 +5,20 @@ import com.auction.app.domains.feedback.dtos.FeedbackResponse;
 import com.auction.app.domains.feedback.exceptions.FeedBackNotFoundException;
 import com.auction.app.domains.feedback.model.Feedback;
 import com.auction.app.domains.users.users.model.User;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.auction.app.infrastructure.security.SecurityUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class FeedbackServiceImpl implements FeedbackService {
 
-    @Autowired
-    private FeedbackRepository feedbackRepository;
+    private final FeedbackRepository feedbackRepository;
+    private final SecurityUtils securityUtils;
 
     @Override
     @Transactional
@@ -59,19 +59,23 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     // Helpers
     private User currentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
-            throw new BadCredentialsException("User session is invalid or expired.");
+        try {
+            return securityUtils.getCurrentUser();
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
         }
-        return (User) authentication.getPrincipal();
     }
 
     private Feedback findAndValidateCurrentUser(Long id) {
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new FeedBackNotFoundException("Feedback not found"));
 
-        if (!feedback.getClient().getId().equals(currentUser().getId())) {
-            throw new AccessDeniedException("Unauthorized: You cannot delete this feedback.");
+        try {
+            if (!feedback.getClient().getId().equals(securityUtils.getCurrentUserId())) {
+                throw new AccessDeniedException("Unauthorized: You cannot delete this feedback.");
+            }
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
         }
 
         return feedback;

@@ -6,31 +6,32 @@ import com.auction.app.domains.notifications.NotificationService;
 import com.auction.app.domains.notifications.model.NotificationType;
 import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.auction.app.infrastructure.security.SecurityUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ConnectionServiceImpl implements ConnectionService {
 
-    @Autowired
-    private ConnectionRepository connectionRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private NotificationService notificationService;
+    private final ConnectionRepository connectionRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final SecurityUtils securityUtils;
 
     @Override
     @Transactional
     public String toggleFollow(Long followingId) {
-        Long followerId = currentUser().getId();
+        Long followerId;
+        try {
+            followerId = securityUtils.getCurrentUserId();
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
+        }
 
         if (followerId.equals(followingId)) {
             throw new SelfFollowException("Action rejected: You cannot follow your own account.");
@@ -44,7 +45,12 @@ public class ConnectionServiceImpl implements ConnectionService {
         }
         else {
             // Follow
-            User follower = findUserById(followerId);
+            User follower;
+            try {
+                follower = securityUtils.getCurrentUser();
+            } catch (IllegalStateException e) {
+                throw new BadCredentialsException("User session is invalid or expired.", e);
+            }
             User following = findUserById(followingId);
             Connection connection = Connection.builder()
                     .follower(follower)
@@ -75,13 +81,4 @@ public class ConnectionServiceImpl implements ConnectionService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found!"));
     }
-
-    private User currentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
-            throw new BadCredentialsException("User session is invalid or expired.");
-        }
-        return (User) authentication.getPrincipal();
-    }
-
 }

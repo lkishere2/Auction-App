@@ -23,7 +23,6 @@ import com.auction.app.domains.auction.exceptions.InvalidBidException;
 import com.auction.app.domains.users.exceptions.UserNotFoundException;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +32,7 @@ import com.auction.app.domains.auction.auction.AuctionRepository;
 import com.auction.app.domains.auction.auction.model.AuctionStatus;
 import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserRepository;
+import com.auction.app.infrastructure.security.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +47,7 @@ public class BidService {
     private final UserRepository userRepository;
     private final AuctionCacheAdapter auctionCacheAdapter;
     private final AuctionPublisher publisher;
+    private final SecurityUtils securityUtils;
 
     private static final long SNIPER_PROTECTION_SECONDS = 120L;
     private static final BigDecimal INCREMENT_PERCENTAGE = BigDecimal.valueOf(0.05);
@@ -149,8 +150,12 @@ public class BidService {
     }
 
     public List<Long> getAuctionsBiddenByCurrentUser() {
-        User user = currentUser();
-        return bidRepository.findDistinctAuctionIdsByBidderId(user.getId());
+        try {
+            Long currentUserId = securityUtils.getCurrentUserId();
+            return bidRepository.findDistinctAuctionIdsByBidderId(currentUserId);
+        } catch (IllegalStateException e) {
+            throw new InvalidBidException("User is not authenticated.");
+        }
     }
 
     // Helpers
@@ -259,13 +264,5 @@ public class BidService {
 
     private BigDecimal calculateIncrement(BigDecimal amount) {
         return amount.multiply(INCREMENT_PERCENTAGE).setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private User currentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new InvalidBidException("User is not authenticated.");
-        }
-        return (User) authentication.getPrincipal();
     }
 }
