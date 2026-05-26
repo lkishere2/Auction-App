@@ -36,6 +36,9 @@ public class User implements UserDetails {
     @Column(name = "password", nullable = false)
     private String password;
 
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private Provider provider = Provider.LOCAL;

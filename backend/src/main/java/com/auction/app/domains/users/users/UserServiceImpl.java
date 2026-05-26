@@ -6,6 +6,7 @@ import com.auction.app.domains.users.exceptions.InvalidUserStateException;
 import com.auction.app.domains.users.exceptions.UserUpdateException;
 import com.auction.app.domains.users.users.dtos.EmailRequest;
 import com.auction.app.domains.users.users.dtos.PasswordRequest;
+import com.auction.app.domains.users.users.dtos.ProfileImageRequest;
 import com.auction.app.domains.users.users.dtos.UserResponse;
 import com.auction.app.domains.users.users.dtos.UsernameRequest;
 import com.auction.app.domains.users.users.model.Role;
@@ -90,6 +91,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
+    public void updateProfileImage(ProfileImageRequest profileImageRequest) {
+        try {
+            userRepository.updateProfileImageUrl(securityUtils.getCurrentUserId(), profileImageRequest.getProfileImageUrl());
+        } catch (IllegalStateException e) {
+            throw new BadCredentialsException("User session is invalid or expired.", e);
+        }
+    }
+
+    @Override
     public Page<UserResponse> getAllUsers(int page, int size) {
         // Create pagination request
         PageRequest pageRequest = PageRequest.of(page, size);
@@ -117,12 +128,13 @@ public class UserServiceImpl implements UserService {
         userRepository.save(userToDisable);
     }
 
-    //HELPERS
+    // Helpers
     private UserResponse mapToResponse(User user){
         return UserResponse.builder()
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .balance(user.getBalance())
+                .profileImageUrl(user.getProfileImageUrl())
                 .build();
     }
 }

@@ -2,6 +2,7 @@ package com.auction.app.domains.users.users;
 
 import com.auction.app.domains.users.users.dtos.EmailRequest;
 import com.auction.app.domains.users.users.dtos.PasswordRequest;
+import com.auction.app.domains.users.users.dtos.ProfileImageRequest;
 import com.auction.app.domains.users.users.dtos.UserResponse;
 import com.auction.app.domains.users.users.dtos.UsernameRequest;
 import com.auction.app.domains.users.users.model.User;
@@ -50,6 +51,12 @@ public class UserController {
     @PatchMapping("/update-password")
     public ResponseEntity<Void> updatePassword(@Valid @RequestBody PasswordRequest userRequest) {
         userService.updatePassword(userRequest);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/update-profile-image")
+    public ResponseEntity<Void> updateProfileImage(@Valid @RequestBody ProfileImageRequest profileImageRequest) {
+        userService.updateProfileImage(profileImageRequest);
         return ResponseEntity.noContent().build();
     }
 
