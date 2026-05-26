@@ -1,4 +1,4 @@
-package com.auction.app.domains.products;
+package com.auction.app.domains.products.model;
 
 public enum Tag {
     ELECTRONICS,

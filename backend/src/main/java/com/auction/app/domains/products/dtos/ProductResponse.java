@@ -1,6 +1,6 @@
 package com.auction.app.domains.products.dtos;
 
-import com.auction.app.domains.products.Tag;
+import com.auction.app.domains.products.model.Tag;
 import lombok.*;
 
 import java.time.LocalDateTime;

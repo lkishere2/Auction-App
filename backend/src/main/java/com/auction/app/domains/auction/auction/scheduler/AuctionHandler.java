@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 import com.auction.app.domains.auction.auction.AuctionRepository;
-import com.auction.app.domains.auction.auction.AuctionStatus;
+import com.auction.app.domains.auction.auction.model.AuctionStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -19,15 +19,11 @@ public class AuctionHandler {
     private final AuctionRepository auctionRepository;
     private final AuctionExecutionService auctionExecutionService;
 
-    @Scheduled(fixedRate = 100000)
+    @Scheduled(fixedRate = 10000)
     public void activateUpcomingAuctions() {
 
         List<Long> toActivateIds = auctionRepository.findUpcomingIdsToActivate(AuctionStatus.UPCOMING, Instant.now());
-        if (toActivateIds.isEmpty()) {
-            return;
-        }
-
-        // Efficiently update database statuses using a single UPDATE query
+        if (toActivateIds.isEmpty()) return;
         auctionRepository.updateStatusForIds(toActivateIds, AuctionStatus.ACTIVE);
 
         for (Long auctionId : toActivateIds) {
@@ -40,13 +36,11 @@ public class AuctionHandler {
     }
 
     // Same logic as the active
-    @Scheduled(fixedRate = 100000)
+    @Scheduled(fixedRate = 10000)
     public void endActiveAuctions() {
 
         List<Long> toEndIds = auctionRepository.findActiveIdsToEnd(AuctionStatus.ACTIVE, Instant.now());
-        if (toEndIds.isEmpty()) {
-            return;
-        }
+        if (toEndIds.isEmpty()) return;
 
         for (Long auctionId : toEndIds) {
             try {

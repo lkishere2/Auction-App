@@ -3,7 +3,7 @@ package com.auction.app.domains.auth.refreshToken;
 import com.auction.app.domains.auth.exceptions.RefreshTokenExpiredException;
 import com.auction.app.domains.auth.exceptions.RefreshTokenNotFoundException;
 import com.auction.app.domains.auth.exceptions.RefreshTokenSuspiciousActivityException;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.model.User;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;

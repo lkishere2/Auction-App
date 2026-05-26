@@ -1,6 +1,6 @@
-package com.auction.app.domains.feedback;
+package com.auction.app.domains.feedback.model;
 
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

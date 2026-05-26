@@ -1,10 +1,10 @@
-package com.auction.app.domains.auction.bids;
+package com.auction.app.domains.auction.bids.model;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
-import com.auction.app.domains.auction.auction.Auction;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.auction.auction.model.Auction;
+import com.auction.app.domains.users.users.model.User;
 
 import jakarta.persistence.*;
 import lombok.*;

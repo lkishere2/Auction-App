@@ -4,6 +4,7 @@ import java.util.List;
 import com.auction.app.domains.auction.auction.dtos.AuctionFindingRequest;
 import com.auction.app.domains.auction.auction.dtos.AuctionRequest;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
+import com.auction.app.domains.auction.auction.model.Auction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,6 +14,6 @@ public interface AuctionService {
     AuctionResponse getAuction(Long auctionId);
     List<AuctionResponse> getAuctionsBidOnByCurrentUser(List<Long> auctionIds);
     Page<AuctionResponse> getDiscoverableAuctions(AuctionFindingRequest request, Pageable pageable);
-    List<AuctionResponse> getMyAuctions();
+    Page<AuctionResponse> getMyAuctions(Pageable pageable);
     void cacheAuctionResponse(Auction auction);
 }

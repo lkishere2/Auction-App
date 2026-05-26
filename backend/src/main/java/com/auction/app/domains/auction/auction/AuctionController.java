@@ -1,7 +1,5 @@
 package com.auction.app.domains.auction.auction;
 
-import java.util.List;
-
 import com.auction.app.domains.auction.auction.dtos.AuctionFindingRequest;
 import com.auction.app.domains.auction.auction.dtos.AuctionRequest;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
@@ -10,7 +8,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -51,7 +49,11 @@ public class AuctionController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<List<AuctionResponse>> getMyAuctions() {
-        return ResponseEntity.ok(auctionService.getMyAuctions());
+    public ResponseEntity<Page<AuctionResponse>> getMyAuctions(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(pageNo, size, Sort.by(Sort.Direction.DESC, "startTime"));
+        return ResponseEntity.ok(auctionService.getMyAuctions(pageable));
     }
 }

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-import com.auction.app.domains.auction.auction.Auction;
+import com.auction.app.domains.auction.auction.model.Auction;
 import com.auction.app.domains.auction.bids.dtos.BidResponse;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;

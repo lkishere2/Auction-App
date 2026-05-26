@@ -1,12 +1,12 @@
 package com.auction.app.feedback;
 
-import com.auction.app.domains.feedback.Feedback;
+import com.auction.app.domains.feedback.model.Feedback;
 import com.auction.app.domains.feedback.FeedbackRepository;
 import com.auction.app.domains.feedback.FeedbackServiceImpl;
 import com.auction.app.domains.feedback.dtos.FeedbackRequest;
 import com.auction.app.domains.feedback.dtos.FeedbackResponse;
 import com.auction.app.domains.feedback.exceptions.FeedBackNotFoundException;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.model.User;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

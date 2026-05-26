@@ -1,4 +1,4 @@
-package com.auction.app.domains.auction.auction;
+package com.auction.app.domains.auction.auction.model;
 
 public enum AuctionStatus {
     UPCOMING,

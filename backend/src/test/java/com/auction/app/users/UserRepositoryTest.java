@@ -1,7 +1,7 @@
 package com.auction.app.users;
 
-import com.auction.app.domains.users.users.Role;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.model.Role;
+import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;

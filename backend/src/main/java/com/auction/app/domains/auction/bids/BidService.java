@@ -14,6 +14,8 @@ import com.auction.app.domains.auction.bids.dtos.BidNotificationPayload;
 import com.auction.app.domains.auction.bids.dtos.BidRequest;
 import com.auction.app.domains.auction.bids.dtos.BidResponse;
 import com.auction.app.domains.auction.bids.dtos.PendingBid;
+import com.auction.app.domains.auction.bids.model.Bid;
+import com.auction.app.domains.auction.bids.model.BidStatus;
 import com.auction.app.domains.auction.exceptions.AuctionNotFoundException;
 import com.auction.app.domains.auction.exceptions.BidNotFoundException;
 import com.auction.app.domains.auction.exceptions.InsufficientBalanceException;
@@ -25,11 +27,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.auction.app.domains.auction.auction.Auction;
+import com.auction.app.domains.auction.auction.model.Auction;
 import com.auction.app.domains.auction.auction.redis.AuctionCacheAdapter;
 import com.auction.app.domains.auction.auction.AuctionRepository;
-import com.auction.app.domains.auction.auction.AuctionStatus;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.auction.auction.model.AuctionStatus;
+import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserRepository;
 
 import lombok.RequiredArgsConstructor;

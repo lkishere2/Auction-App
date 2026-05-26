@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import com.auction.app.domains.auction.auction.model.Auction;
+import com.auction.app.domains.auction.auction.model.AuctionStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -55,8 +57,11 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.product WHERE a.status = :status")
     List<Auction> findByStatusWithDetails(@Param("status") AuctionStatus status);
 
-    @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.product WHERE a.seller.id = :sellerId")
-    List<Auction> findBySellerIdWithDetails(@Param("sellerId") Long sellerId);
+    @Query(
+            value = "SELECT a.id FROM Auction a WHERE a.seller.id = :sellerId",
+            countQuery = "SELECT COUNT(a.id) FROM Auction a WHERE a.seller.id = :sellerId"
+    )
+    Page<Long> findIdsBySellerIdOrderByStartTime(@Param("sellerId") Long sellerId, Pageable pageable);
 
     @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.product WHERE a.id IN :ids")
     List<Auction> findByIdsWithDetails(@Param("ids") List<Long> ids);

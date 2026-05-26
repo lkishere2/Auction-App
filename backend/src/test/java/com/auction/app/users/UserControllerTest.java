@@ -1,6 +1,6 @@
 package com.auction.app.users;
 
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserController;
 import com.auction.app.domains.users.users.UserService;
 import com.auction.app.domains.users.users.dtos.EmailRequest;

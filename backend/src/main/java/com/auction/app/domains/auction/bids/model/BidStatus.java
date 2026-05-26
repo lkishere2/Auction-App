@@ -1,4 +1,4 @@
-package com.auction.app.domains.auction.bids;
+package com.auction.app.domains.auction.bids.model;
 
 public enum BidStatus {
     PENDING,   // In the Redis queue

@@ -1,15 +1,14 @@
-package com.auction.app.domains.auction.auction;
+package com.auction.app.domains.auction.auction.model;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 
-import com.auction.app.domains.products.Product;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.products.model.Product;
+import com.auction.app.domains.users.users.model.User;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter
@@ -17,7 +16,14 @@ import org.hibernate.annotations.ColumnDefault;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "auctions")
+@Table(
+        name = "auctions",
+        indexes = {
+                @Index(name = "idx_auctions_seller_start_time", columnList = "seller_id, start_time DESC"),
+                @Index(name = "idx_auctions_status", columnList = "status"),
+                @Index(name = "idx_auctions_end_time", columnList = "end_time")
+        }
+)
 public class Auction {
 
     @Id
@@ -28,8 +34,8 @@ public class Auction {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
     @Column(nullable = false)

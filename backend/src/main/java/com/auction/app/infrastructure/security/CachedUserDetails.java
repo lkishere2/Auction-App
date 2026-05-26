@@ -1,6 +1,6 @@
 package com.auction.app.infrastructure.security;
 
-import com.auction.app.domains.users.users.Role;
+import com.auction.app.domains.users.users.model.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,4 +1,4 @@
-package com.auction.app.domains.notifications;
+package com.auction.app.domains.notifications.model;
 
 public enum NotificationType {
     FOLLOWING,

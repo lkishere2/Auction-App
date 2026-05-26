@@ -1,5 +1,8 @@
 package com.auction.app.domains.transaction;
 
+import com.auction.app.domains.transaction.model.Transaction;
+import com.auction.app.domains.transaction.model.TransactionStatus;
+import com.auction.app.domains.transaction.model.TransactionType;
 import com.auction.app.domains.users.exceptions.UserNotFoundException;
 import com.auction.app.domains.transaction.dtos.ClientRequest;
 import com.auction.app.domains.transaction.dtos.TransactionRequest;
@@ -8,7 +11,7 @@ import com.auction.app.domains.transaction.exceptions.UnauthorizedTransactionExc
 import com.auction.app.domains.transaction.exceptions.InsufficientFundsException;
 import com.auction.app.domains.transaction.exceptions.TransactionNotFoundException;
 import com.auction.app.domains.transaction.exceptions.InvalidTransactionStateException;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

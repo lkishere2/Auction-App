@@ -1,9 +1,8 @@
 package com.auction.app.infrastructure.security;
 
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,7 +13,6 @@ import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
@@ -24,16 +22,14 @@ public class CustomUserDetailsService implements UserDetailsService {
     private static final Duration TTL = Duration.ofMinutes(30);
 
     @Override
-    public CachedUserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         String key = PREFIX + email;
 
         CachedUserDetails cached = userDetailsRedisTemplate.opsForValue().get(key);
         if (cached != null) {
-            log.info("Cache hit for {}", email);
             return cached;
         }
 
-        log.info("Cache miss for {}", email);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 

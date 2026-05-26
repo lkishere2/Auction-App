@@ -1,6 +1,6 @@
 import api from './axios';
 import type { FeedbackRequest, FeedbackResponse } from '../types/feedback';
-import type { Page } from '../types/pagination';
+import type { Page, Slice } from '../types/pagination';
 
 export const feedbackApi = {
 
@@ -14,7 +14,7 @@ export const feedbackApi = {
         api.delete<void>(`/feedback/${id}`),
 
     getCurrentUserFeedback: (page = 0, size = 10) =>
-        api.get<FeedbackResponse[]>(`/feedback/my?page=${page}&size=${size}`),
+        api.get<Slice<FeedbackResponse>>(`/feedback/my?page=${page}&size=${size}`),
 
     getAllFeedback: (page = 0, size = 20) =>
         api.get<Page<FeedbackResponse>>(`/feedback/all?page=${page}&size=${size}`),

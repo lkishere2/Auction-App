@@ -2,15 +2,17 @@ package com.auction.app.domains.auction.auction.scheduler;
 
 import com.auction.app.domains.auction.auction.*;
 import com.auction.app.domains.auction.auction.dtos.AuctionResponse;
+import com.auction.app.domains.auction.auction.model.Auction;
+import com.auction.app.domains.auction.auction.model.AuctionStatus;
 import com.auction.app.domains.auction.auction.notification.AuctionPublisher;
 import com.auction.app.domains.auction.auction.redis.AuctionCacheAdapter;
 import com.auction.app.domains.auction.exceptions.AuctionNotFoundException;
-import com.auction.app.domains.auction.bids.Bid;
+import com.auction.app.domains.auction.bids.model.Bid;
 import com.auction.app.domains.auction.bids.BidRepository;
-import com.auction.app.domains.auction.bids.BidStatus;
-import com.auction.app.domains.products.Product;
+import com.auction.app.domains.auction.bids.model.BidStatus;
+import com.auction.app.domains.products.model.Product;
 import com.auction.app.domains.products.ProductRepository;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.users.users.model.User;
 import com.auction.app.domains.users.users.UserRepository;
 
 import org.springframework.stereotype.Service;
@@ -37,48 +39,57 @@ public class AuctionExecutionService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processActiveAuctionById(Long auctionId) {
-        // Fetch the entity since cache mapping and publishing requires target data
+
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new AuctionNotFoundException("Auction not found: " + auctionId));
 
-        // Update or create cache response, flip to ACTIVE
-        AuctionResponse response = auctionCacheAdapter.getAuctionResponse(auction.getId());
+        AuctionResponse response = null;
+        try {
+            response = auctionCacheAdapter.getAuctionResponse(auction.getId());
+            log.info("[Auction Execution Service - Activate Auction] Cache auction #{}", auctionId);
+        } catch (Exception e) {
+            log.error("[Auction Execution Service - Activate Auction] Failed to cache auction #{}, errors: {}", auctionId, e.getMessage());
+        }
+
 
         if (response != null) {
-            // Cache exists, update it
+            log.info("[Auction Execution Service - Activate Auction] Cache auction #{} to active", auctionId);
             response.setStatus(AuctionStatus.ACTIVE);
             auctionCacheAdapter.updateAuctionResponse(auction.getId(), response);
         }
         else {
-            // Cache doesn't exist.
-            // Since 'auction' was just set to ACTIVE on the line above,
-            // caching it now will automatically create it with an ACTIVE status!
+            log.info("[Auction Execution Service - Activate Auction] Auction #{} not exist in cache, fall back to DB!", auctionId);
             auction.setStatus(AuctionStatus.ACTIVE);
             auctionService.cacheAuctionResponse(auction);
         }
 
-        // Notify all subscribers that auction is now ACTIVE
         publisher.publishAuctionStarted(auction);
         log.info("Auction #{} is now ACTIVE", auction.getId());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processEndedAuctionById(Long auctionId) {
-        // Fetch the full entity graph with details only for the targeted item processing closure
+
         Auction auction = auctionRepository.findByIdWithDetails(auctionId)
                 .orElseThrow(() -> new AuctionNotFoundException("Auction not found: " + auctionId));
 
-        // Sync final result
-        AuctionResponse response = auctionCacheAdapter.getAuctionResponse(auction.getId());
+        AuctionResponse response = null;
+        try {
+            response = auctionCacheAdapter.getAuctionResponse(auction.getId());
+            log.info("[Auction Execution Service - End Auction] Cache auction #{}", auctionId);
+        } catch (Exception e) {
+            log.error("[Auction Execution Service - End Auction] Failed to cache auction #{}, errors: {}", auctionId, e.getMessage());
+        }
+
         if (response != null) {
             auction.setCurrentPrice(response.getCurrentPrice());
             auction.setBidCount(response.getBidCount());
             auction.setEndTime(response.getEndTime());
             response.setStatus(AuctionStatus.ENDED);
             auctionCacheAdapter.updateAuctionResponse(auction.getId(), response);
+            log.info("[Auction Execution Service - End Auction] Cache auction #{} success to update", auctionId);
         }
 
-        // Handle winner or no bids
         if (auction.getBidCount() == 0) {
             handleNoBids(auction);
         }
@@ -86,11 +97,9 @@ public class AuctionExecutionService {
             handleWinner(auction);
         }
 
-        // Update and save
         auction.setStatus(AuctionStatus.ENDED);
         auctionRepository.save(auction);
 
-        // Clear the cache post-commit
         Long id = auction.getId();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
@@ -99,7 +108,6 @@ public class AuctionExecutionService {
             }
         });
 
-        // And finally, notify to user
         String winnerLabel = auction.getWinner() != null
                 ? auction.getWinner().getDisplayName() + " #" + auction.getWinner().getId()
                 : null;
@@ -111,7 +119,6 @@ public class AuctionExecutionService {
     // Helpers
 
     private void handleNoBids(Auction auction) {
-        // Restore quantity back to the seller's product
         Product product = auction.getProduct();
         product.setQuantity(product.getQuantity() + auction.getAuctionedQuantity());
         productRepository.save(product);

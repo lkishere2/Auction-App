@@ -1,12 +1,14 @@
-package com.auction.app.domains.products;
+package com.auction.app.domains.products.model;
 
-import com.auction.app.domains.auction.auction.Auction;
-import com.auction.app.domains.users.users.User;
+import com.auction.app.domains.auction.auction.model.Auction;
+import com.auction.app.domains.users.users.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Setter
@@ -45,8 +47,9 @@ public class Product {
     @JoinColumn(name = "user_id", nullable = false)
     private User owner;
 
-    @OneToOne(mappedBy = "product")
-    private Auction auction;
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Auction> auctions = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default

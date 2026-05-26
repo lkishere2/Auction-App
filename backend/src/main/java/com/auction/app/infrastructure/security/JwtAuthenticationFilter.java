@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -57,25 +58,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
+
             final String jwt = authHeader.substring(7);
             final String userEmail = jwtService.extractUsername(jwt);
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            if (userEmail != null && authentication == null) {
-                CachedUserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+            if (userEmail != null && !(authentication instanceof UsernamePasswordAuthenticationToken)) {
 
-                if (jwtService.isTokenValid(jwt, userDetails)) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+
+                boolean valid = jwtService.isTokenValid(jwt, userDetails);
+
+                if (valid) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );
-
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
 
             chain.doFilter(request, response);
+
         } catch (Exception e) {
             exceptionResolver.resolveException(request, response, null, e);
         }
