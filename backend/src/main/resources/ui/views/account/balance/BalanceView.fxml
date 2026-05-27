@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.StackPane?>
+
+<StackPane xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.auction.app.controllers.account.balance.BalanceViewController"
+           style="-fx-background-color: #0F172A;"
+           prefWidth="850.0" prefHeight="650.0">
+
+    <ScrollPane fitToWidth="true"
+                style="-fx-background-color: transparent; -fx-background: transparent;"
+                hbarPolicy="NEVER"
+                vbarPolicy="AS_NEEDED">
+        <VBox spacing="25.0" alignment="TOP_CENTER">
+            <padding>
+                <Insets top="30.0" right="30.0" bottom="30.0" left="30.0"/>
+            </padding>
+
+            <fx:include fx:id="userBalanceCard" source="/ui/views/account/balance/UserBalanceCard.fxml"/>
+
+            <fx:include fx:id="transactionHistoryBox" source="/ui/views/account/balance/TransactionHistoryBox.fxml"/>
+        </VBox>
+    </ScrollPane>
+
+    <StackPane fx:id="modalOverlayTarget" mouseTransparent="true" pickOnBounds="false" />
+
+</StackPane>

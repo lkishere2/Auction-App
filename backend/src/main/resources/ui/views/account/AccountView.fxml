@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.auction.app.controllers.account.AccountViewController"
+            prefHeight="768.0" prefWidth="1024.0">
+
+    <top>
+        <fx:include source="../../components/Header.fxml" />
+    </top>
+
+    <left>
+        <fx:include source="AccountNavbar.fxml" />
+    </left>
+
+    <center>
+        <StackPane fx:id="accountContentCanvas" style="-fx-background-color: #f5f6fa;" />
+    </center>
+
+    <bottom>
+        <fx:include source="../../components/Footer.fxml" />
+    </bottom>
+
+</BorderPane>

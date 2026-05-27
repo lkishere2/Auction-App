@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.app.controllers.account.AccountNavbarController"
+      spacing="15"
+      style="-fx-background-color: #2c3e50; -fx-padding: 20; -fx-pref-width: 220;">
+
+    <fx:include fx:id="navProfile" source="../../components/NavItem.fxml" />
+    <fx:include fx:id="navBalance" source="../../components/NavItem.fxml" />
+    <fx:include fx:id="navInventory" source="../../components/NavItem.fxml" />
+    <fx:include fx:id="navSettings" source="../../components/NavItem.fxml" />
+
+    <Region VBox.vgrow="ALWAYS" />
+
+    <fx:include fx:id="navBack" source="../../components/NavItem.fxml" />
+
+</VBox>

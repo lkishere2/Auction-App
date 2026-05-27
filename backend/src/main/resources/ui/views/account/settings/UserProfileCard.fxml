@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.app.controllers.account.settings.UserProfileCardController"
+      alignment="CENTER_LEFT"
+      spacing="20"
+      style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 4);">
+
+    <VBox alignment="CENTER" style="-fx-background-color: #ecf0f1; -fx-background-radius: 50;">
+        <ImageView fx:id="avatarImageView" fitHeight="80.0" fitWidth="80.0" pickOnBounds="true" preserveRatio="true" />
+    </VBox>
+
+    <VBox spacing="5" alignment="CENTER_LEFT">
+        <Label fx:id="usernameLabel" text="Loading Username..." style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+        <Label fx:id="roleLabel" text="User Member" style="-fx-font-size: 13px; -fx-text-fill: #7f8c8d;" />
+    </VBox>
+</HBox>

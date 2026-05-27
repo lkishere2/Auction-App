@@ -21,7 +21,7 @@ public class MainController {
 
     @FXML
     public void initialize() {
-        navigateTo("/ui/LoginView.fxml");
+        navigateTo("/ui/views/auth/LoginView.fxml");
     }
 
 
