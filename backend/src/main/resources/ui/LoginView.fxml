@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane prefHeight="600.0" prefWidth="800.0" style="-fx-background-color: #f8f9fa;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.auction.app.controllers.LoginViewController">
+    <children>
+        <VBox alignment="CENTER" maxWidth="420.0" spacing="0.0">
+            <children>
+                <fx:include fx:id="loginBox" source="components/LoginBox.fxml" />
+            </children>
+        </VBox>
+    </children>
+</StackPane>
