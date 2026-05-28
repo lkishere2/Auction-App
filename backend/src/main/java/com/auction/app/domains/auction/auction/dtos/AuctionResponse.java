@@ -8,7 +8,9 @@ import java.util.Set;
 
 import com.auction.app.domains.auction.auction.model.Auction;
 import com.auction.app.domains.auction.auction.model.AuctionStatus;
+import com.auction.app.domains.products.model.Product;
 import com.auction.app.domains.products.model.Tag;
+import com.auction.app.domains.users.users.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +21,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuctionResponse implements Serializable {
+
     private Long id;
+    private Long sellerId;
     private String sellerLabel;
     private Long productId;
     private String productName;
@@ -34,18 +38,24 @@ public class AuctionResponse implements Serializable {
     private Instant endTime;
     private boolean extended;
     private AuctionStatus status;
+    private Long winnerId;
     private String winnerLabel;
     private Integer bidCount;
 
     public static AuctionResponse from(Auction auction) {
+
+        User seller = auction.getSeller();
+        Product product = auction.getProduct();
+
         return AuctionResponse.builder()
                 .id(auction.getId())
-                .sellerLabel(auction.getSeller().getDisplayName())
-                .productId(auction.getProduct().getId())
-                .productName(auction.getProduct().getProductName())
-                .productTags(new HashSet<>(auction.getProduct().getTags()))
-                .productDescription(auction.getProduct().getDescription())
-                .productImageUrl(auction.getProduct().getProductImageUrl())
+                .sellerId(seller.getId())
+                .sellerLabel(seller.getDisplayName())
+                .productId(product.getId())
+                .productName(product.getProductName())
+                .productTags(new HashSet<>(product.getTags()))
+                .productDescription(product.getDescription())
+                .productImageUrl(product.getProductImageUrl())
                 .auctionedQuantity(auction.getAuctionedQuantity())
                 .startingPrice(auction.getStartingPrice())
                 .currentPrice(auction.getCurrentPrice())
@@ -53,9 +63,7 @@ public class AuctionResponse implements Serializable {
                 .startTime(auction.getStartTime())
                 .endTime(auction.getEndTime())
                 .status(auction.getStatus())
-                .winnerLabel(auction.getWinner() != null
-                        ? auction.getWinner().getDisplayName()
-                        : null)
+                .winnerLabel(auction.getWinner() != null ? auction.getWinner().getDisplayName() : null)
                 .bidCount(auction.getBidCount())
                 .build();
     }

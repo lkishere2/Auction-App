@@ -1,4 +1,4 @@
-package com.auction.app.domains.users.connection;
+package com.auction.app.domains.users.connection.model;
 
 import com.auction.app.domains.users.users.model.User;
 import jakarta.persistence.*;

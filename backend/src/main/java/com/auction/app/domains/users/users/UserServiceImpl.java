@@ -131,7 +131,7 @@ public class UserServiceImpl implements UserService {
     // Helpers
     private UserResponse mapToResponse(User user){
         return UserResponse.builder()
-                .username(user.getUsername())
+                .username(user.getDisplayName())
                 .email(user.getEmail())
                 .balance(user.getBalance())
                 .profileImageUrl(user.getProfileImageUrl())

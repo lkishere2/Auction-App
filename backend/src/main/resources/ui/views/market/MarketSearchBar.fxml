@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<HBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.app.controllers.market.MarketSearchBarController"
+      spacing="12" alignment="CENTER_LEFT"
+      style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0;">
+    <padding>
+        <Insets top="15" right="20" bottom="15" left="20"/>
+    </padding>
+
+    <TextField fx:id="searchField" promptText="Search by product name..." prefHeight="38" HBox.hgrow="ALWAYS"
+               style="-fx-background-radius: 8px; -fx-border-color: #CBD5E1; -fx-border-radius: 8px; -fx-background-color: #F8FAFC;"/>
+
+    <TextField fx:id="minPriceField" promptText="Min Price ($)..." prefHeight="38" prefWidth="110"
+               style="-fx-background-radius: 8px; -fx-border-color: #CBD5E1; -fx-border-radius: 8px; -fx-background-color: #F8FAFC;"/>
+
+    <ComboBox fx:id="statusComboBox" prefHeight="38" prefWidth="140"
+              style="-fx-background-color: #FFFFFF; -fx-border-color: #CBD5E1; -fx-background-radius: 8px; -fx-border-radius: 8px;"/>
+
+    <Button fx:id="searchButton" text="Search Inventory" prefHeight="38" onAction="#handleSearchAction"
+            style="-fx-background-color: #0F172A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8px; -fx-cursor: hand;"/>
+</HBox>

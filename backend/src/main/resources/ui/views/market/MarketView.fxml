@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.app.controllers.market.MarketViewController"
+      prefHeight="720.0" prefWidth="1080.0" style="-fx-background-color: #F8FAFC;">
+
+    <fx:include source="../home/Navbar.fxml"/>
+
+    <VBox HBox.hgrow="ALWAYS">
+
+        <fx:include fx:id="searchBar" source="MarketSearchBar.fxml"/>
+
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                    style="-fx-background: #F8FAFC; -fx-background-color: transparent; -fx-viewport-background: transparent;">
+            <content>
+                <fx:include fx:id="auctionGrid" source="MarketAuctionGrid.fxml"/>
+            </content>
+        </ScrollPane>
+
+        <HBox spacing="15" alignment="CENTER" style="-fx-padding: 15; -fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 1 0 0 0;">
+            <Button fx:id="prevButton" text="← Previous" onAction="#handlePrevPage" style="-fx-background-radius: 6px; -fx-cursor: hand;"/>
+            <Label fx:id="pageTrackerLabel" text="Page 1 of 1" style="-fx-font-weight: bold; -fx-text-fill: #4F46E5;"/>
+            <Button fx:id="nextButton" text="Next →" onAction="#handleNextPage" style="-fx-background-radius: 6px; -fx-cursor: hand;"/>
+        </HBox>
+    </VBox>
+</HBox>

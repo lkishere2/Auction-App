@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<GridPane fx:id="gridPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="com.auction.app.controllers.market.MarketAuctionGridController"
+          hgap="20" vgap="20" style="-fx-background-color: #F8FAFC;">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    <columnConstraints>
+        <ColumnConstraints hgrow="SOMETIMES" minWidth="240" prefWidth="240" />
+        <ColumnConstraints hgrow="SOMETIMES" minWidth="240" prefWidth="240" />
+        <ColumnConstraints hgrow="SOMETIMES" minWidth="240" prefWidth="240" />
+        <ColumnConstraints hgrow="SOMETIMES" minWidth="240" prefWidth="240" />
+    </columnConstraints>
+</GridPane>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.Region?>
+
+<HBox alignment="CENTER_LEFT" prefHeight="35.0" style="-fx-background-color: #0F172A; -fx-border-color: #1E293B; -fx-border-width: 1 0 0 0; -fx-padding: 0 20 0 20;"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <Label text="© 2026 BidVault Engine Platform Systems" style="-fx-text-fill: #475569; -fx-font-size: 11.0;" />
+        <Region HBox.hgrow="ALWAYS" />
+        <Label text="v1.0.0 (Stable JVM UI Component Connection Build)" style="-fx-text-fill: #475569; -fx-font-size: 11.0;" />
+    </children>
+</HBox>

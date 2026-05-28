@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+
+<HBox fx:id="navItemRoot" alignment="CENTER_LEFT" spacing="12.0"
+      style="-fx-cursor: hand; -fx-padding: 10 15 10 15; -fx-background-radius: 6;"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.app.controllers.NavbarItemController">
+    <children>
+        <Label fx:id="iconLabel" style="-fx-text-fill: #94A3B8; -fx-font-size: 16.0;" />
+
+        <Label fx:id="itemTextLabel" text="Nav Link" style="-fx-text-fill: #E2E8F0; -fx-font-size: 14.0; -fx-font-weight: bold;" />
+    </children>
+</HBox>

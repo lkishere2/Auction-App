@@ -228,12 +228,12 @@ public class AuctionRepositoryTest {
 
         // 2. Test filtering by Tags matching requirements
         Page<Auction> resultsWithMatchingTag = auctionRepository.findAuctions(
-                null, List.of("ELECTRONICS"), true, null, null, null, null, pageable
+                null, new String[]{"ELECTRONICS"}, true, null, null, null, null, pageable
         );
         assertThat(resultsWithMatchingTag.getContent()).hasSize(1);
 
         Page<Auction> resultsWithUnmatchedTag = auctionRepository.findAuctions(
-                null, List.of("BOOKS"), true, null, null, null, null, pageable
+                null, new String[]{"BOOKS"}, true, null, null, null, null, pageable
         );
         assertThat(resultsWithUnmatchedTag.getContent()).isEmpty();
 

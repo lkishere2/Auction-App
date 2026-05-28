@@ -12,8 +12,6 @@ public interface AuctionRedisPort {
 
     AuctionResponse getAuctionResponse(Long auctionId);
 
-    void updateAuctionResponse(Long auctionId, AuctionResponse response);
-
     void cacheAuctionResponses(Map<Long, AuctionResponse> responses);
 
     List<AuctionResponse> getAuctionResponses(List<Long> ids);

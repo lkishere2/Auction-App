@@ -24,6 +24,15 @@ import lombok.RequiredArgsConstructor;
 public class AuctionController {
     private final AuctionService auctionService;
 
+    @GetMapping("/me")
+    public ResponseEntity<Page<AuctionResponse>> getMyAuctions(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(pageNo, size, Sort.by(Sort.Direction.DESC, "startTime"));
+        return ResponseEntity.ok(auctionService.getMyAuctions(pageable));
+    }
+
     @PostMapping("/create")
     public ResponseEntity<AuctionResponse> createAuction(@RequestBody @Valid AuctionRequest request) {
         return ResponseEntity.ok(auctionService.createAuction(request));
@@ -48,12 +57,4 @@ public class AuctionController {
         return ResponseEntity.ok(auctionService.getDiscoverableAuctions(request, pageable));
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<Page<AuctionResponse>> getMyAuctions(
-            @RequestParam(defaultValue = "0") int pageNo,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        Pageable pageable = PageRequest.of(pageNo, size, Sort.by(Sort.Direction.DESC, "startTime"));
-        return ResponseEntity.ok(auctionService.getMyAuctions(pageable));
-    }
 }

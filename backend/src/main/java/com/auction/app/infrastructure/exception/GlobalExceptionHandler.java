@@ -98,9 +98,9 @@ public class GlobalExceptionHandler {
 
     // User domain
     @ExceptionHandler({
-            UserNotFoundException.class
+            com.auction.app.domains.users.exceptions.UserNotFoundException.class
     })
-    public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleUserNotFoundException(RuntimeException ex, HttpServletRequest request) {
         return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request); // 404
     }
 

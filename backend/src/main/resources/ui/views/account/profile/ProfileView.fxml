@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.app.controllers.account.profile.ProfileViewController"
+      spacing="16" style="-fx-background-color: #F8FAFC;" VBox.vgrow="ALWAYS">
+
+    <padding>
+        <Insets top="20" right="24" bottom="20" left="24"/>
+    </padding>
+
+    <fx:include fx:id="userStatsBox" source="UserStatsBox.fxml"/>
+
+    <Separator style="-fx-padding: 4 0;"/>
+
+    <fx:include fx:id="auctionGrid" source="AuctionGrid.fxml"/>
+</VBox>

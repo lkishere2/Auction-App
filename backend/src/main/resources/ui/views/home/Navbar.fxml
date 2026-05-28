@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.Region?>
+
+<VBox prefWidth="240.0" spacing="8.0" style="-fx-background-color: #1E293B; -fx-padding: 20;"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.app.controllers.home.NavbarController">
+    <children>
+        <VBox spacing="4.0" style="-fx-padding: 0 0 20 0;">
+            <Label text="BidVault" style="-fx-text-fill: #38BDF8; -fx-font-size: 22.0; -fx-font-weight: max-bold;" />
+            <Label text="Desktop App Client" style="-fx-text-fill: #64748B; -fx-font-size: 11.0;" />
+        </VBox>
+
+        <fx:include source="../../components/NavItem.fxml" fx:id="navDashboard" />
+        <fx:include source="../../components/NavItem.fxml" fx:id="navExplore" />
+        <fx:include source="../../components/NavItem.fxml" fx:id="navMarket" />
+        <fx:include source="../../components/NavItem.fxml" fx:id="navAccount" />
+
+        <fx:include source="../../components/NavItem.fxml" fx:id="navAdmin" visible="false" managed="false"/>
+
+        <Region VBox.vgrow="ALWAYS" />
+
+        <fx:include source="../../components/NavItem.fxml" fx:id="navLogout" />
+    </children>
+</VBox>

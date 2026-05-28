@@ -17,32 +17,44 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
+    @Query(
+            value = "SELECT a.id FROM Auction a WHERE a.seller.id = :sellerId",
+            countQuery = "SELECT COUNT(a.id) FROM Auction a WHERE a.seller.id = :sellerId"
+    )
+    Page<Long> findIdsBySellerIdOrderByStartTime(@Param("sellerId") Long sellerId, Pageable pageable);
+
     @Query(value = "SELECT DISTINCT a.* FROM auctions a " +
             "LEFT JOIN products p ON a.product_id = p.id " +
-            "WHERE (:status IS NULL AND a.status IN ('UPCOMING', 'ACTIVE') OR a.status = :status) " +
+            "WHERE (" +
+            "    (CAST(:status AS VARCHAR) IS NULL AND a.status IN ('UPCOMING', 'ACTIVE')) " +
+            "    OR (CAST(:status AS VARCHAR) IS NOT NULL AND a.status = CAST(:status AS VARCHAR))" +
+            ") " +
             "AND (:productName IS NULL OR LOWER(p.product_name) LIKE LOWER(CONCAT('%', :productName, '%'))) " +
             "AND (:hasTags = false OR EXISTS ( " +
             "    SELECT 1 FROM product_tags pt " +
-            "    WHERE pt.product_id = p.id AND pt.tag_name IN (:tags)" +
+            "    WHERE pt.product_id = p.id AND pt.tag_name = ANY(CAST(:tags AS text[]))" +
             ")) " +
-            "AND (:minStartingPrice IS NULL OR a.starting_price >= :minStartingPrice) " +
-            "AND (:startTime IS NULL OR a.start_time >= :startTime) " +
-            "AND (:endTime IS NULL OR a.end_time <= :endTime)",
+            "AND (CAST(:minStartingPrice AS NUMERIC) IS NULL OR a.starting_price >= :minStartingPrice) " +
+            "AND (CAST(:startTime AS TIMESTAMP) IS NULL OR a.start_time >= :startTime) " +
+            "AND (CAST(:endTime AS TIMESTAMP) IS NULL OR a.end_time <= :endTime)",
             countQuery = "SELECT COUNT(DISTINCT a.id) FROM auctions a " +
                     "LEFT JOIN products p ON a.product_id = p.id " +
-                    "WHERE (:status IS NULL AND a.status IN ('UPCOMING', 'ACTIVE') OR a.status = :status) " +
+                    "WHERE (" +
+                    "    (CAST(:status AS VARCHAR) IS NULL AND a.status IN ('UPCOMING', 'ACTIVE')) " +
+                    "    OR (CAST(:status AS VARCHAR) IS NOT NULL AND a.status = CAST(:status AS VARCHAR))" +
+                    ") " +
                     "AND (:productName IS NULL OR LOWER(p.product_name) LIKE LOWER(CONCAT('%', :productName, '%'))) " +
                     "AND (:hasTags = false OR EXISTS ( " +
                     "    SELECT 1 FROM product_tags pt " +
-                    "    WHERE pt.product_id = p.id AND pt.tag_name IN (:tags)" +
+                    "    WHERE pt.product_id = p.id AND pt.tag_name = ANY(CAST(:tags AS text[]))" +
                     ")) " +
-                    "AND (:minStartingPrice IS NULL OR a.starting_price >= :minStartingPrice) " +
-                    "AND (:startTime IS NULL OR a.start_time >= :startTime) " +
-                    "AND (:endTime IS NULL OR a.end_time <= :endTime)",
+                    "AND (CAST(:minStartingPrice AS NUMERIC) IS NULL OR a.starting_price >= :minStartingPrice) " +
+                    "AND (CAST(:startTime AS TIMESTAMP) IS NULL OR a.start_time >= :startTime) " +
+                    "AND (CAST(:endTime AS TIMESTAMP) IS NULL OR a.end_time <= :endTime)",
             nativeQuery = true)
     Page<Auction> findAuctions(
             @Param("productName") String productName,
-            @Param("tags") java.util.Collection<String> tags,
+            @Param("tags") String[] tags,
             @Param("hasTags") boolean hasTags,
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime,
@@ -57,13 +69,10 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.product WHERE a.status = :status")
     List<Auction> findByStatusWithDetails(@Param("status") AuctionStatus status);
 
-    @Query(
-            value = "SELECT a.id FROM Auction a WHERE a.seller.id = :sellerId",
-            countQuery = "SELECT COUNT(a.id) FROM Auction a WHERE a.seller.id = :sellerId"
-    )
-    Page<Long> findIdsBySellerIdOrderByStartTime(@Param("sellerId") Long sellerId, Pageable pageable);
+    @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.product WHERE a.seller.id = :sellerId")
+    List<Auction> findBySellerIdWithDetails(@Param("sellerId") Long sellerId);
 
-    @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.product WHERE a.id IN :ids")
+    @Query("SELECT a FROM Auction a JOIN FETCH a.seller s JOIN FETCH a.product p LEFT JOIN FETCH p.tags t WHERE a.id IN :ids")
     List<Auction> findByIdsWithDetails(@Param("ids") List<Long> ids);
 
     boolean existsByProduct_IdAndStatusIn(Long productId, List<AuctionStatus> statuses);
@@ -78,5 +87,4 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     @Transactional
     @Query("UPDATE Auction a SET a.status = :newStatus WHERE a.id IN :ids")
     int updateStatusForIds(@Param("ids") List<Long> ids, @Param("newStatus") AuctionStatus newStatus);
-
 }

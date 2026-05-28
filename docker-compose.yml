@@ -1,0 +1,59 @@
+services:
+  # ── Backend (Spring Boot) ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bidvault-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Database
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      # JWT
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRY=${JWT_EXPIRY}
+      # Redis
+      - SPRING_DATA_REDIS_HOST=${SPRING_DATA_REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${SPRING_DATA_REDIS_PORT}
+      - SPRING_DATA_REDIS_SSL_ENABLED=${SPRING_DATA_REDIS_SSL_ENABLED}
+      - SPRING_DATA_REDIS_PASSWORD=${SPRING_DATA_REDIS_PASSWORD}
+      # Server
+      - SERVER_PORT=8000
+      # Email
+      - SUPPORT_EMAIL=${SUPPORT_EMAIL}
+      - APP_PASSWORD=${APP_PASSWORD}
+      # Cloudinary
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 45s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - bidvault-network
+
+  # ── Frontend (React + Vite → Nginx) ───────────────────────────────
+  frontend:
+    build:
+      context: ./frontend/auction-app
+      dockerfile: Dockerfile
+    container_name: bidvault-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - bidvault-network
+
+networks:
+  bidvault-network:
+    driver: bridge

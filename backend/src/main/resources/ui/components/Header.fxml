@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.geometry.Insets?>
+
+<HBox alignment="CENTER_LEFT" prefHeight="65.0" style="-fx-background-color: #0F172A; -fx-border-color: #1E293B; -fx-border-width: 0 0 1 0; -fx-padding: 0 30 0 30;"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <Label text="Dashboard Overview" style="-fx-text-fill: #F8FAFC; -fx-font-size: 18.0; -fx-font-weight: bold;" />
+
+        <Region HBox.hgrow="ALWAYS" />
+
+        <HBox alignment="CENTER" spacing="10.0">
+            <Label text="Connected as:" style="-fx-text-fill: #64748B; -fx-font-size: 13.0;" />
+            <Label fx:id="usernameBadge" text="Authenticated User" style="-fx-text-fill: #38BDF8; -fx-font-size: 13.0; -fx-font-weight: bold; -fx-background-color: #1E293B; -fx-padding: 4 10 4 10; -fx-background-radius: 20;" />
+        </HBox>
+    </children>
+</HBox>

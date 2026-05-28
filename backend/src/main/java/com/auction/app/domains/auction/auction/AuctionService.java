@@ -15,5 +15,4 @@ public interface AuctionService {
     List<AuctionResponse> getAuctionsBidOnByCurrentUser(List<Long> auctionIds);
     Page<AuctionResponse> getDiscoverableAuctions(AuctionFindingRequest request, Pageable pageable);
     Page<AuctionResponse> getMyAuctions(Pageable pageable);
-    void cacheAuctionResponse(Auction auction);
 }

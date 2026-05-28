@@ -1,5 +1,7 @@
 package com.auction.app.domains.users.connection;
 
+import com.auction.app.domains.users.connection.dtos.UserStats;
+import com.auction.app.domains.users.connection.model.Connection;
 import com.auction.app.domains.users.exceptions.UserNotFoundException;
 import com.auction.app.domains.users.exceptions.SelfFollowException;
 import com.auction.app.domains.notifications.NotificationService;

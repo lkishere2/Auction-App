@@ -46,11 +46,6 @@ public class AuctionCacheAdapter implements AuctionRedisPort {
     }
 
     @Override
-    public void updateAuctionResponse(Long auctionId, AuctionResponse response) {
-        cacheAuctionResponse(auctionId, response);
-    }
-
-    @Override
     public void cacheAuctionResponses(Map<Long, AuctionResponse> responses) {
         Map<String, AuctionResponse> keyedMap = responses.entrySet().stream()
                 .collect(Collectors.toMap(e -> getResponseKey(e.getKey()), Map.Entry::getValue));

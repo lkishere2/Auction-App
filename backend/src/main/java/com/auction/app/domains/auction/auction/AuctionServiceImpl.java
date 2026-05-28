@@ -43,6 +43,48 @@ public class AuctionServiceImpl implements AuctionService {
     private final NotificationService notificationService;
     private final SecurityUtils securityUtils;
 
+    public Page<AuctionResponse> getMyAuctions(Pageable pageable) {
+
+        // Create the page first
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "startTime")
+        );
+
+        // The query is kinda long, consider using local host DB or change geo position to Singapore
+        Page<Long> idPage = auctionRepository.findIdsBySellerIdOrderByStartTime(securityUtils.getCurrentUserId(), sortedPageable);
+        List<Long> ids = idPage.getContent();
+        if (ids.isEmpty()) return Page.empty(pageable);
+
+        // Use MGET in Redis to avoid multiple network round-trips
+        List<AuctionResponse> cached = cache.getAuctionResponses(ids);
+
+        // Handle cache missing, repopulate Redis and fetch response from DB
+        Map<Long, Integer> idToIndex = new HashMap<>();
+        List<Long> missedIds = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i++) {
+            if (cached.get(i) == null) missedIds.add(ids.get(i));
+            idToIndex.put(ids.get(i), i);
+        }
+
+        if (!missedIds.isEmpty()) {
+            List<Auction> fetched = auctionRepository.findByIdsWithDetails(missedIds);
+
+            Map<Long, AuctionResponse> toCache = new HashMap<>();
+            for (Auction auction : fetched) {
+                AuctionResponse response = AuctionResponse.from(auction);
+                cached.set(idToIndex.get(auction.getId()), response);
+                toCache.put(auction.getId(), response);
+            }
+
+            cache.cacheAuctionResponses(toCache);
+        }
+
+        // Return the response
+        return new PageImpl<>(cached, pageable, idPage.getTotalElements());
+    }
+
     @Transactional
     public AuctionResponse createAuction(AuctionRequest request) {
 
@@ -58,14 +100,13 @@ public class AuctionServiceImpl implements AuctionService {
         product.setQuantity(product.getQuantity() - request.getQuantity());
         productRepository.save(product);
 
-        // Create new entity in DB, and save it
         Auction auction = mapToEntity(request, product, seller);
-        Auction saved = auctionRepository.save(auction);
+        auctionRepository.save(auction);
+        AuctionResponse response = AuctionResponse.from(auction);
 
-        // We also cache that for fast retrievement
-        cacheAuctionResponse(saved);
+        cache.cacheAuctionResponse(auction.getId(), response);
 
-        // Notify to all user
+        // Notify to all followers
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
                     @Override
@@ -75,7 +116,7 @@ public class AuctionServiceImpl implements AuctionService {
                 }
         );
 
-        return AuctionResponse.from(saved);
+        return response;
     }
 
     @Transactional
@@ -104,7 +145,6 @@ public class AuctionServiceImpl implements AuctionService {
                     @Override
                     public void afterCommit() {
                         cache.cacheAuctionResponse(auctionId, response);
-                        log.info("[Auction Service] Post-commit: Cache updated to CANCELLED for auction #{}", auctionId);
                     }
                 }
         );
@@ -146,79 +186,15 @@ public class AuctionServiceImpl implements AuctionService {
     public Page<AuctionResponse> getDiscoverableAuctions(AuctionFindingRequest request, Pageable pageable) {
 
         // Map tag enums to string values for native query execution
-        List<String> tagStrings = (request.getTags() != null) ? request.getTags().stream().map(Enum::name).toList() : List.of();
+        String[] tagStrings = (request.getTags() != null) ? request.getTags().stream().map(Enum::name).toArray(String[]::new) : new String[0];
 
-        boolean hasTags = !tagStrings.isEmpty();
+        boolean hasTags = tagStrings.length > 0;
         String statusString = (request.getStatus() != null) ? request.getStatus().name() : null;
 
         return auctionRepository.findAuctions(request.getProductName(), tagStrings, hasTags,
                 request.getStartTime(), request.getEndTime(), request.getMinStartingPrice(),
                 statusString, pageable
         ).map(AuctionResponse::from);
-    }
-
-    public Page<AuctionResponse> getMyAuctions(Pageable pageable) {
-        long t0 = System.currentTimeMillis();
-
-        long tSort = System.currentTimeMillis();
-        Pageable sortedPageable = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                Sort.by(Sort.Direction.DESC, "startTime")
-        );
-        log.info("[Auction Service - Get My Auctions] Sort pageable took {}ms",
-                System.currentTimeMillis() - tSort);
-
-        long tQuery = System.currentTimeMillis();
-        Page<Long> idPage = auctionRepository.findIdsBySellerIdOrderByStartTime(
-                securityUtils.getCurrentUserId(), sortedPageable);
-        List<Long> ids = idPage.getContent();
-        log.info("[Auction Service - Get My Auctions] ID query took {}ms, {} IDs returned",
-                System.currentTimeMillis() - tQuery, ids.size());
-
-        log.info("[Auction Service - Get My Auctions] ID query (from t0) took {}ms",
-                System.currentTimeMillis() - t0);
-
-        if (ids.isEmpty()) return Page.empty(pageable);
-
-        long t1 = System.currentTimeMillis();
-        List<AuctionResponse> cached = cache.getAuctionResponses(ids);
-        log.info("[Auction Service - Get My Auctions] Redis MGET took {}ms",
-                System.currentTimeMillis() - t1);
-
-        Map<Long, Integer> idToIndex = new HashMap<>();
-        List<Long> missedIds = new ArrayList<>();
-        for (int i = 0; i < ids.size(); i++) {
-            if (cached.get(i) == null) missedIds.add(ids.get(i));
-            idToIndex.put(ids.get(i), i);
-        }
-        log.info("[Auction Service - Get My Auctions] Cache hits: {}, misses: {}",
-                ids.size() - missedIds.size(), missedIds.size());
-
-        if (!missedIds.isEmpty()) {
-            long t2 = System.currentTimeMillis();
-            List<Auction> fetched = auctionRepository.findByIdsWithDetails(missedIds);
-            log.info("[Auction Service - Get My Auctions] DB fallback took {}ms for {} misses",
-                    System.currentTimeMillis() - t2, missedIds.size());
-
-            Map<Long, AuctionResponse> toCache = new HashMap<>();
-            for (Auction auction : fetched) {
-                AuctionResponse response = AuctionResponse.from(auction);
-                cached.set(idToIndex.get(auction.getId()), response);
-                toCache.put(auction.getId(), response);
-            }
-
-            cache.cacheAuctionResponses(toCache);
-        }
-
-        log.info("[Auction Service - Get My Auctions] Total took {}ms",
-                System.currentTimeMillis() - t0);
-        return new PageImpl<>(cached, pageable, idPage.getTotalElements());
-    }
-
-    public void cacheAuctionResponse(Auction auction) {
-        AuctionResponse response = AuctionResponse.from(auction);
-        cache.cacheAuctionResponse(auction.getId(), response);
     }
 
     // Helpers

@@ -21,4 +21,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p WHERE p.id = :id AND p.owner.id = :currentUserId")
     Optional<Product> findByIdAndOwnerUserId(@Param("id") Long id, @Param("currentUserId") Long currentUserId);
+
 }

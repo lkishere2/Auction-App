@@ -33,8 +33,7 @@ public class AuctionExecutionService {
     private final BidRepository bidRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final AuctionCacheAdapter auctionCacheAdapter;
-    private final AuctionService auctionService;
+    private final AuctionCacheAdapter cache;
     private final AuctionPublisher publisher;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -45,7 +44,7 @@ public class AuctionExecutionService {
 
         AuctionResponse response = null;
         try {
-            response = auctionCacheAdapter.getAuctionResponse(auction.getId());
+            response = cache.getAuctionResponse(auction.getId());
             log.info("[Auction Execution Service - Activate Auction] Cache auction #{}", auctionId);
         } catch (Exception e) {
             log.error("[Auction Execution Service - Activate Auction] Failed to cache auction #{}, errors: {}", auctionId, e.getMessage());
@@ -55,12 +54,12 @@ public class AuctionExecutionService {
         if (response != null) {
             log.info("[Auction Execution Service - Activate Auction] Cache auction #{} to active", auctionId);
             response.setStatus(AuctionStatus.ACTIVE);
-            auctionCacheAdapter.updateAuctionResponse(auction.getId(), response);
+            cache.cacheAuctionResponse(auction.getId(), response);
         }
         else {
             log.info("[Auction Execution Service - Activate Auction] Auction #{} not exist in cache, fall back to DB!", auctionId);
             auction.setStatus(AuctionStatus.ACTIVE);
-            auctionService.cacheAuctionResponse(auction);
+            cache.cacheAuctionResponse(auction.getId(), AuctionResponse.from(auction));
         }
 
         publisher.publishAuctionStarted(auction);
@@ -75,7 +74,7 @@ public class AuctionExecutionService {
 
         AuctionResponse response = null;
         try {
-            response = auctionCacheAdapter.getAuctionResponse(auction.getId());
+            response = cache.getAuctionResponse(auction.getId());
             log.info("[Auction Execution Service - End Auction] Cache auction #{}", auctionId);
         } catch (Exception e) {
             log.error("[Auction Execution Service - End Auction] Failed to cache auction #{}, errors: {}", auctionId, e.getMessage());
@@ -86,7 +85,7 @@ public class AuctionExecutionService {
             auction.setBidCount(response.getBidCount());
             auction.setEndTime(response.getEndTime());
             response.setStatus(AuctionStatus.ENDED);
-            auctionCacheAdapter.updateAuctionResponse(auction.getId(), response);
+            cache.cacheAuctionResponse(auction.getId(), response);
             log.info("[Auction Execution Service - End Auction] Cache auction #{} success to update", auctionId);
         }
 
@@ -104,7 +103,7 @@ public class AuctionExecutionService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                auctionCacheAdapter.clearAuctionCache(id);
+                cache.clearAuctionCache(id);
             }
         });
 

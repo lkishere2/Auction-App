@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.app.controllers.account.profile.UserStatsBoxController"
+      spacing="32" alignment="CENTER_LEFT" style="-fx-background-color: white; -fx-padding: 24; -fx-background-radius: 12;">
+
+    <VBox alignment="CENTER">
+        <VBox style="-fx-border-color: #E2E8F0; -fx-border-width: 2; -fx-border-radius: 100; -fx-padding: 4;">
+            <ImageView fx:id="avatarImageView" fitWidth="90.0" fitHeight="90.0" pickOnBounds="true"/>
+        </VBox>
+    </VBox>
+
+    <VBox spacing="12" HBox.hgrow="ALWAYS">
+        <HBox spacing="16" alignment="CENTER_LEFT">
+            <Label fx:id="usernameLabel" text="username" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #0F172A;"/>
+            <Label text="Verified Seller" style="-fx-background-color: #F0FDF4; -fx-text-fill: #16A34A; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 4 8; -fx-background-radius: 20;"/>
+        </HBox>
+
+        <HBox spacing="24" alignment="CENTER_LEFT">
+            <HBox spacing="4">
+                <Label fx:id="auctionCountLabel" text="0" style="-fx-font-weight: bold; -fx-text-fill: #0F172A; -fx-font-size: 14px;"/>
+                <Label text="auctions" style="-fx-text-fill: #64748B; -fx-font-size: 14px;"/>
+            </HBox>
+            <HBox spacing="4">
+                <Label fx:id="itemsCountLabel" text="0" style="-fx-font-weight: bold; -fx-text-fill: #0F172A; -fx-font-size: 14px;"/>
+                <Label text="vault items" style="-fx-text-fill: #64748B; -fx-font-size: 14px;"/>
+            </HBox>
+        </HBox>
+
+        <VBox spacing="2">
+            <Label fx:id="displayNameLabel" text="Account Holder Name" style="-fx-font-weight: bold; -fx-text-fill: #1E293B; -fx-font-size: 14px;"/>
+            <Label text="BidVault platform collector workspace portfolio." style="-fx-text-fill: #64748B; -fx-font-size: 12px;"/>
+        </VBox>
+    </VBox>
+</HBox>

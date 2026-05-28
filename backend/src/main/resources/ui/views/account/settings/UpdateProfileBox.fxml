@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.app.controllers.account.settings.UpdateProfileBoxController"
+      spacing="25"
+      style="-fx-background-color: transparent;">
+
+    <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 4);">
+        <Label text="Change Account Username" style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+        <HBox spacing="15" alignment="CENTER_LEFT">
+            <TextField fx:id="usernameField" HBox.hgrow="ALWAYS" prefHeight="38" style="-fx-background-radius: 5;"/>
+            <Button text="Save Username" onAction="#handleUsernameUpdate" prefHeight="38"
+                    style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 0 20; -fx-background-radius: 5; -fx-cursor: hand;"/>
+        </HBox>
+    </VBox>
+
+    <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 4);">
+        <Label text="Update Email Address" style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+        <HBox spacing="15" alignment="CENTER_LEFT">
+            <TextField fx:id="emailField" HBox.hgrow="ALWAYS" prefHeight="38" style="-fx-background-radius: 5;"/>
+            <Button text="Update Email" onAction="#handleEmailUpdate" prefHeight="38"
+                    style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 0 20; -fx-background-radius: 5; -fx-cursor: hand;"/>
+        </HBox>
+    </VBox>
+
+    <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 4);">
+        <Label text="Profile Avatar Image" style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+        <HBox spacing="15" alignment="CENTER_LEFT">
+            <TextField fx:id="fileSelectedPathField" editable="false" promptText="No image file selected..." HBox.hgrow="ALWAYS" prefHeight="38" style="-fx-background-radius: 5; -fx-background-color: #f8f9fa;"/>
+            <Button text="Browse File..." onAction="#handleChooseFile" prefHeight="38"
+                    style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;"/>
+            <Button fx:id="uploadImageButton" text="Upload New Avatar" onAction="#handleImageUpload" prefHeight="38" disable="true"
+                    style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 0 20; -fx-background-radius: 5; -fx-cursor: hand;"/>
+        </HBox>
+    </VBox>
+
+    <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 4);">
+        <Label text="Security &amp; Change Password" style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+        <VBox spacing="12">
+            <PasswordField fx:id="currentPasswordField" promptText="Confirm Current Password" prefHeight="38" style="-fx-background-radius: 5;"/>
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <PasswordField fx:id="passwordField" promptText="Enter New Security Password" HBox.hgrow="ALWAYS" prefHeight="38" style="-fx-background-radius: 5;"/>
+                <Button text="Update Security Password" onAction="#handlePasswordUpdate" prefHeight="38"
+                        style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 0 20; -fx-background-radius: 5; -fx-cursor: hand;"/>
+            </HBox>
+        </VBox>
+    </VBox>
+
+</VBox>
