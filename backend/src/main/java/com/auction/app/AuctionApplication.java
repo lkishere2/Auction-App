@@ -20,7 +20,6 @@ public class AuctionApplication extends Application {
 
 	@Override
 	public void init() {
-		// Boostrap the Spring Boot backend in the background when JavaFX initializes
 		this.context = new SpringApplicationBuilder()
 				.sources(AuctionApplication.class)
 				.run();
@@ -28,19 +27,16 @@ public class AuctionApplication extends Application {
 
 	@Override
 	public void start(Stage primaryStage) {
-		// Fire the event to open your JavaFX window once Spring is ready
 		this.context.publishEvent(new StageReadyEvent(primaryStage));
 	}
 
 	@Override
 	public void stop() {
-		// Cleanly shut down both Spring and JavaFX when the user closes the window
 		this.context.close();
 		Platform.exit();
 	}
 
 	public static void main(String[] args) {
-		// Launch JavaFX instead of SpringApplication.run()
 		Application.launch(AuctionApplication.class, args);
 	}
 }

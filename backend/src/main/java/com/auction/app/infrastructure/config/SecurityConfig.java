@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/index.html", "/style.css", "/app.js").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
